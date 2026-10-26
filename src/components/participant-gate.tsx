@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { connection } from "next/server";
 import { getParticipant, type Participant, type Role } from "@/lib/session";
-import { isDbConfigured } from "@/lib/supabase";
+import { isDbConfigured, missingEnv } from "@/lib/supabase";
 import { EntryForm } from "./entry-form";
 import { LeaveButton } from "./leave-button";
 import { Badge, Card } from "./ui";
@@ -24,8 +24,11 @@ export async function ParticipantGate({
   if (!isDbConfigured()) {
     return (
       <Card className="border-sun-400 bg-sun-100">
-        <p className="font-bold">Falta configurar Supabase.</p>
-        <p className="mt-1 text-sm">Copia .env.example a .env.local y completa SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY.</p>
+        <p className="font-bold">Falta configurar el servidor.</p>
+        <p className="mt-1 text-sm">
+          Variables de entorno faltantes: <b>{missingEnv().join(", ")}</b>. En local van en .env.local; en Vercel, en Settings → Environment
+          Variables (y luego Redeploy).
+        </p>
       </Card>
     );
   }

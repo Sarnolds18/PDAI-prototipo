@@ -24,6 +24,7 @@ export async function startParticipant(_prev: EntryState, form: FormData): Promi
   const consent = form.get("consent") === "on";
   const isTest = form.get("demo") === "1";
 
+  if (!process.env.SESSION_SECRET) return { error: "El servidor no está configurado (falta SESSION_SECRET)." };
   if (name.length < 2) return { error: "Escribe tu nombre." };
   if (!EMAIL_RE.test(email)) return { error: "Revisa tu email." };
   if (!consent) return { error: "Necesitamos tu consentimiento para continuar." };

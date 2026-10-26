@@ -20,6 +20,11 @@ export function db(): SupabaseClient {
   return client;
 }
 
+/** Variables necesarias para guardar datos y abrir sesiones. Vacío = todo configurado. */
+export function missingEnv(): string[] {
+  return ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "SESSION_SECRET"].filter((k) => !process.env[k]);
+}
+
 export function isDbConfigured(): boolean {
-  return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+  return missingEnv().length === 0;
 }

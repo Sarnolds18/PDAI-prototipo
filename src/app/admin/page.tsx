@@ -8,7 +8,7 @@ import { loadAdminData, type AdminData } from "@/lib/admin-data";
 import { AGE_RANGES, EVALUATOR_TYPES, INDUSTRIES, label, OBSTACLES, STAGES, WTP_RANGES } from "@/lib/catalog";
 import { formatDuration, formatPct } from "@/lib/format";
 import type { Criterion, HypothesisResult, Status } from "@/lib/hypotheses";
-import { isDbConfigured } from "@/lib/supabase";
+import { isDbConfigured, missingEnv } from "@/lib/supabase";
 import { DeleteIteration, IterationForm, LoginForm, LogoutButton, SettingsForm, TestToggle } from "./forms";
 
 export const metadata: Metadata = { title: "Resultados de validación", robots: { index: false } };
@@ -25,7 +25,7 @@ export default function AdminPage() {
 
 async function AdminGate() {
   await connection();
-  if (!isDbConfigured()) return <Card className="bg-sun-100">Falta configurar Supabase (.env.local).</Card>;
+  if (!isDbConfigured()) return <Card className="bg-sun-100">Faltan variables de entorno: {missingEnv().join(", ")}.</Card>;
   if (!(await isAdmin())) {
     return (
       <Card className="py-10">
