@@ -2,13 +2,13 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, Printer, ScrollText } from "lucide-react";
-import { trackEvent } from "@/app/actions/events";
 import { completePact, savePactStep, startPact } from "@/app/actions/pact";
 import { Chips, Question, Stepper, YesNo } from "@/components/form-bits";
 import { LogoMark } from "@/components/logo";
 import { Button, Card, Field, inputClass } from "@/components/ui";
 import { formatCLP, formatNumber } from "@/lib/format";
 import { DECISION_RULES, equityWarning, LEAVE_RULES, PACT_ROLES, type PactData, type Partner } from "@/lib/pact";
+import { track } from "@/lib/track";
 
 const STEPS = ["Socios", "Aportes", "Dedicación y reparto", "Vesting y decisiones", "Si alguien sale", "Documento"];
 
@@ -24,7 +24,7 @@ export function PactWizard({ initial, completed, lastStep }: { initial: PactData
   useEffect(() => {
     if (started.current || completed) return;
     started.current = true;
-    startPact().then(() => trackEvent("pacto", "step_view", Math.min(lastStep, 4)));
+    startPact().then(() => track("pacto", "step_view", Math.min(lastStep, 4)));
   }, [completed, lastStep]);
 
   const setPartner = (i: 0 | 1, patch: Partial<Partner>) =>
@@ -56,7 +56,7 @@ export function PactWizard({ initial, completed, lastStep }: { initial: PactData
         const res = await savePactStep(step, d);
         if (res.error) return setError(res.error);
         setStep(step + 1);
-        trackEvent("pacto", "step_view", step + 1);
+        track("pacto", "step_view", step + 1);
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
         const res = await completePact(d, wouldUse ?? false);

@@ -48,16 +48,6 @@ export async function saveFinanceStep(step: number, inputs: Partial<FinanceInput
   return { ok: true };
 }
 
-export async function recordFinanceHelp(step: number, topic: string) {
-  const p = await requireParticipant("emprendedor");
-  const { data } = await db().from("financial_models").select("help_opens").eq("participant_id", p.id).single();
-  await db()
-    .from("financial_models")
-    .update({ help_opens: (data?.help_opens ?? 0) + 1 })
-    .eq("participant_id", p.id);
-  await db().from("events").insert({ participant_id: p.id, module: "finanzas", type: "help_open", step, payload: { topic } });
-}
-
 export async function completeFinance(inputs: Partial<FinanceInputs>, neededHelp: boolean) {
   const p = await requireParticipant("emprendedor");
   const { data: row } = await db()

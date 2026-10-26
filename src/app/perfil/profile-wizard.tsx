@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, BadgeCheck, ChartLine, FileCheck2, Lightbulb, Rocket, Timer, Trash2, TrendingUp } from "lucide-react";
-import { trackEvent } from "@/app/actions/events";
 import { completeProfile, saveProfileStep, startProfile } from "@/app/actions/profile";
 import { Chips, OptionCards, Question, Segmented, Stepper, YesNo } from "@/components/form-bits";
 import { Button, ButtonLink, Card, Field, inputClass } from "@/components/ui";
@@ -23,6 +22,7 @@ import {
   type StageKey,
 } from "@/lib/catalog";
 import { formatDuration } from "@/lib/format";
+import { track } from "@/lib/track";
 import type { ProfileData, SkillEntry } from "@/lib/types";
 
 const STEPS = ["Tú", "Tu proyecto", "Competencias", "Descripción", "Cierre"];
@@ -64,7 +64,7 @@ export function ProfileWizard({ initial, completed, durationS, profileId }: Prop
   useEffect(() => {
     if (started.current || completed) return;
     started.current = true;
-    startProfile().then(() => trackEvent("perfil", "step_view", 0));
+    startProfile().then(() => track("perfil", "step_view", 0));
   }, [completed]);
 
   const set = <K extends keyof ProfileData>(k: K, v: ProfileData[K]) => setData((d) => ({ ...d, [k]: v }));
@@ -109,7 +109,7 @@ export function ProfileWizard({ initial, completed, durationS, profileId }: Prop
         const res = await saveProfileStep(step, stepFields());
         if (res.error) return setError(res.error);
         setStep(step + 1);
-        trackEvent("perfil", "step_view", step + 1);
+        track("perfil", "step_view", step + 1);
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
         const res = await completeProfile({ main_obstacle: data.main_obstacle, needed_help: neededHelp ?? false });

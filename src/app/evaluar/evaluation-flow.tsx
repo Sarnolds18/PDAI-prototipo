@@ -191,7 +191,7 @@ function Crossover({
             onClick={() => setTab(v)}
             className={`rounded-full px-4 py-2 ${tab === v ? "bg-white text-brand-700 shadow-sm" : "text-muted"}`}
           >
-            {name(v)}
+            Ver {name(v).toLowerCase()}
             {v === first ? " (la que viste)" : ""}
           </button>
         ))}

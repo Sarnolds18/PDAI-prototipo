@@ -3,14 +3,14 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, CircleHelp, FileCheck2, Handshake, Timer } from "lucide-react";
-import { trackEvent } from "@/app/actions/events";
-import { completeFinance, recordFinanceHelp, saveFinanceStep, startFinance } from "@/app/actions/finance";
+import { completeFinance, saveFinanceStep, startFinance } from "@/app/actions/finance";
 import { CashChart } from "@/components/cash-chart";
 import { SERIES_COLORS } from "@/lib/chart-colors";
 import { Question, Stepper, YesNo } from "@/components/form-bits";
 import { Button, Card, inputClass } from "@/components/ui";
 import { computeFinance, IRR_STATUS_TEXT, type FinanceInputs, type FinanceResults } from "@/lib/finance";
 import { formatCLP, formatCLPShort, formatDuration, formatNumber, formatPct } from "@/lib/format";
+import { track } from "@/lib/track";
 
 const STEPS = ["Inversión", "Ventas", "Costos", "Impuestos y tasa", "Escenarios", "Resultados"];
 
@@ -118,7 +118,7 @@ export function FinanceWizard({ initial, completed, durationS, lastStep, profile
   useEffect(() => {
     if (started.current || completed) return;
     started.current = true;
-    startFinance().then(() => trackEvent("finanzas", "step_view", Math.min(lastStep, 4)));
+    startFinance().then(() => track("finanzas", "step_view", Math.min(lastStep, 4)));
   }, [completed, lastStep]);
 
   const inputs = useMemo(() => fromForm(form), [form]);
@@ -128,7 +128,7 @@ export function FinanceWizard({ initial, completed, durationS, lastStep, profile
     setOpenHelp((cur) => (cur === f.key ? null : f.key));
     if (!helpSeen.current.has(f.key)) {
       helpSeen.current.add(f.key);
-      recordFinanceHelp(step, f.key);
+      track("finanzas", "help_open", step, { topic: f.key });
     }
   }
 
@@ -152,7 +152,7 @@ export function FinanceWizard({ initial, completed, durationS, lastStep, profile
         if (res.error) return setError(res.error);
         setStep(step + 1);
         setOpenHelp(null);
-        trackEvent("finanzas", "step_view", step + 1);
+        track("finanzas", "step_view", step + 1);
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
         const res = await completeFinance(inputs, neededHelp ?? false);
