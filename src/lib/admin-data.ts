@@ -1,24 +1,48 @@
 import "server-only";
 import { fetchAll, getSettings } from "./admin";
 import { computeHypotheses, type Rows } from "./hypotheses";
+import { DEMO_PREFIX } from "./demo-data";
 import type { FinanceSummary } from "./finance";
 
 type Participant = { id: string; code: string; name: string; email: string; role: string; is_test: boolean; created_at: string };
 type EventRow = { participant_id: string | null; module: string; type: string; step: number | null; created_at: string };
 
-export async function loadAdminData() {
-  const [participants, profiles, finance, suggestions, feedback, evaluations, pacts, events, iterations, settings] = await Promise.all([
-    fetchAll<Participant>("participants", "*"),
-    fetchAll<Record<string, unknown>>("profiles", "*", "started_at"),
-    fetchAll<Record<string, unknown>>("financial_models", "*", "started_at"),
-    fetchAll<Record<string, unknown>>("match_suggestions", "*"),
-    fetchAll<Record<string, unknown>>("platform_feedback", "*"),
-    fetchAll<Record<string, unknown>>("evaluations", "*", "started_at"),
-    fetchAll<Record<string, unknown>>("pacts", "*", "started_at"),
-    fetchAll<EventRow>("events", "participant_id, module, type, step, created_at"),
-    fetchAll<{ id: string; date: string; module: string; hypothesis: string | null; change: string; reason: string }>("iterations", "*", "date"),
-    getSettings(),
-  ]);
+export type AdminView = "real" | "demo";
+
+/**
+ * view = "real": todo menos el set de demostración (las sesiones de prueba se excluyen de las métricas).
+ * view = "demo": solo el set DEMO-NN, simulado a partir de las entrevistas; se calcula como si fuera real
+ * para mostrar cómo se ve el dashboard lleno. Nunca se mezclan.
+ */
+export async function loadAdminData(view: AdminView = "real") {
+  const [allParticipants, allProfiles, allFinance, allSuggestions, allFeedback, allEvaluations, allPacts, allEvents, iterations, settings] =
+    await Promise.all([
+      fetchAll<Participant>("participants", "*"),
+      fetchAll<Record<string, unknown>>("profiles", "*", "started_at"),
+      fetchAll<Record<string, unknown>>("financial_models", "*", "started_at"),
+      fetchAll<Record<string, unknown>>("match_suggestions", "*"),
+      fetchAll<Record<string, unknown>>("platform_feedback", "*"),
+      fetchAll<Record<string, unknown>>("evaluations", "*", "started_at"),
+      fetchAll<Record<string, unknown>>("pacts", "*", "started_at"),
+      fetchAll<EventRow>("events", "participant_id, module, type, step, created_at"),
+      fetchAll<{ id: string; date: string; module: string; hypothesis: string | null; change: string; reason: string }>("iterations", "*", "date"),
+      getSettings(),
+    ]);
+
+  const isDemo = (p: Participant) => p.code.startsWith(DEMO_PREFIX);
+  const participants =
+    view === "demo" ? allParticipants.filter(isDemo).map((p) => ({ ...p, is_test: false })) : allParticipants.filter((p) => !isDemo(p));
+  const ids = new Set(participants.map((p) => p.id));
+  const mine = <T extends { participant_id?: unknown }>(xs: T[]) => xs.filter((x) => ids.has(x.participant_id as string));
+  const [profiles, finance, suggestions, feedback, evaluations, pacts, events] = [
+    mine(allProfiles),
+    mine(allFinance),
+    mine(allSuggestions),
+    mine(allFeedback),
+    mine(allEvaluations),
+    mine(allPacts),
+    mine(allEvents),
+  ];
 
   const rows = { participants, profiles, finance, suggestions, feedback, evaluations, pacts } as unknown as Rows;
   const { results, extras } = computeHypotheses(rows, settings.min_n);
@@ -92,6 +116,8 @@ export async function loadAdminData() {
         .map((f) => ({ who: `Emprendedor · ${f.would_use ? "sí" : "no"} la usaría`, text: String(f.comment) })),
     ],
     iterations,
+    view,
+    demoCount: allParticipants.filter(isDemo).length,
     raw: { participants, profiles, finance, suggestions, feedback, evaluations, pacts, events },
   };
 }

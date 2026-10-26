@@ -4,10 +4,11 @@ import { toCSV } from "@/lib/csv";
 import { zipStore } from "@/lib/zip";
 
 // Descarga un ZIP con un CSV por tabla + el resumen de hipótesis. Solo para el admin.
-export async function GET() {
+export async function GET(req: Request) {
   if (!(await isAdmin())) return new Response("No autorizado", { status: 401 });
 
-  const d = await loadAdminData();
+  const view = new URL(req.url).searchParams.get("vista") === "demo" ? "demo" : "real";
+  const d = await loadAdminData(view);
   const testIds = new Set(d.participants.filter((p) => p.is_test).map((p) => p.id));
   const tag = <T extends Record<string, unknown>>(rows: T[]) =>
     rows.map((r) => ({ ...r, es_prueba: testIds.has(r.participant_id as string) }));
@@ -27,6 +28,9 @@ export async function GET() {
   const ab = (["A", "B"] as const).map((v) => ({ version: v, ...d.extras.meetingByVariant[v] }));
 
   const files = [
+    ...(view === "demo"
+      ? [{ name: "LEEME_DATOS_DEMO.txt", content: "DATOS DE DEMOSTRACIÓN simulados a partir de las entrevistas del Hito 1. No son resultados de validación.\r\n" }]
+      : []),
     { name: "00_resumen_hipotesis.csv", content: toCSV(resumen) },
     { name: "01_comparacion_A_B.csv", content: toCSV(ab) },
     { name: "participantes.csv", content: toCSV(d.raw.participants) },
@@ -44,7 +48,7 @@ export async function GET() {
   return new Response(Buffer.from(zipStore(files)), {
     headers: {
       "Content-Type": "application/zip",
-      "Content-Disposition": `attachment; filename="emprendered-validacion-${date}.zip"`,
+      "Content-Disposition": `attachment; filename="emprendered-${view === "demo" ? "DEMO" : "validacion"}-${date}.zip"`,
       "Cache-Control": "no-store",
     },
   });

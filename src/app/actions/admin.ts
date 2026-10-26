@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { checkPassword, clearAdminCookie, isAdmin, setAdminCookie } from "@/lib/admin";
+import { clearDemo, seedDemo } from "@/lib/demo-seed";
 import { db } from "@/lib/supabase";
 
 export type AdminState = { error?: string; ok?: boolean } | null;
@@ -63,6 +64,24 @@ export async function saveSettings(_prev: AdminState, form: FormData): Promise<A
       { key: "target_n", value: target },
       { key: "min_n", value: n("min_n", 1) },
     ]);
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
+export async function loadDemoData(): Promise<AdminState> {
+  await guard();
+  try {
+    await seedDemo();
+  } catch (e) {
+    return { error: `No se pudo cargar la demo: ${(e as Error).message}` };
+  }
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
+export async function clearDemoData(): Promise<AdminState> {
+  await guard();
+  await clearDemo();
   revalidatePath("/admin");
   return { ok: true };
 }

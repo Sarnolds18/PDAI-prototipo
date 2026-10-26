@@ -47,7 +47,7 @@ export async function ParticipantGate({
     <>
       <div className="mb-5 flex flex-wrap items-center gap-2 text-sm text-muted">
         <span>
-          Hola, <b className="text-ink">{participant.name.split(" ")[0]}</b>
+          Hola, <b className="text-ink">{participant.name.includes("·") ? participant.name.split("·")[0].trim() : participant.name.split(" ")[0]}</b>
         </span>
         <Badge tone="muted">
           Tu código: <span className="tracking-widest text-ink">{participant.code}</span>

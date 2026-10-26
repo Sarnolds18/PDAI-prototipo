@@ -4,27 +4,28 @@ import { connection } from "next/server";
 import { CheckCircle2, Download, Hourglass, Lock, Users, XCircle } from "lucide-react";
 import { Badge, Card, Skeleton } from "@/components/ui";
 import { isAdmin } from "@/lib/admin";
-import { loadAdminData, type AdminData } from "@/lib/admin-data";
+import { loadAdminData, type AdminData, type AdminView } from "@/lib/admin-data";
 import { AGE_RANGES, EVALUATOR_TYPES, INDUSTRIES, label, OBSTACLES, STAGES, WTP_RANGES } from "@/lib/catalog";
 import { formatDuration, formatPct } from "@/lib/format";
 import type { Criterion, HypothesisResult, Status } from "@/lib/hypotheses";
 import { isDbConfigured, missingEnv } from "@/lib/supabase";
-import { DeleteIteration, IterationForm, LoginForm, LogoutButton, SettingsForm, TestToggle } from "./forms";
+import { DeleteIteration, DemoControls, IterationForm, LoginForm, LogoutButton, SettingsForm, TestToggle } from "./forms";
 
 export const metadata: Metadata = { title: "Resultados de validación", robots: { index: false } };
 
-export default function AdminPage() {
+export default function AdminPage({ searchParams }: PageProps<"/admin">) {
   return (
     <section className="mx-auto max-w-6xl px-4 py-8">
       <Suspense fallback={<Skeleton className="h-[600px]" />}>
-        <AdminGate />
+        <AdminGate searchParams={searchParams} />
       </Suspense>
     </section>
   );
 }
 
-async function AdminGate() {
+async function AdminGate({ searchParams }: { searchParams: PageProps<"/admin">["searchParams"] }) {
   await connection();
+  const view: AdminView = (await searchParams).vista === "demo" ? "demo" : "real";
   if (!isDbConfigured()) return <Card className="bg-sun-100">Faltan variables de entorno: {missingEnv().join(", ")}.</Card>;
   if (!(await isAdmin())) {
     return (
@@ -35,7 +36,7 @@ async function AdminGate() {
       </Card>
     );
   }
-  const data = await loadAdminData();
+  const data = await loadAdminData(view);
   return <Dashboard d={data} />;
 }
 
@@ -67,20 +68,47 @@ function position(c: Criterion, v: number) {
 function Dashboard({ d }: { d: AdminData }) {
   const updated = new Date().toLocaleString("es-CL", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Santiago" });
   const ab = d.extras.meetingByVariant;
+  const demo = d.view === "demo";
 
   return (
     <div className="space-y-10">
+      <nav className="flex flex-wrap items-center gap-2">
+        <div className="inline-flex rounded-full bg-sand p-1 text-sm font-bold">
+          <a href="/admin" className={`rounded-full px-4 py-2 ${!demo ? "bg-white text-brand-700 shadow-sm" : "text-muted"}`}>
+            Datos reales
+          </a>
+          <a href="/admin?vista=demo" className={`rounded-full px-4 py-2 ${demo ? "bg-white text-sun-600 shadow-sm" : "text-muted"}`}>
+            Demo (simulada)
+          </a>
+        </div>
+        {demo && <DemoControls loaded={d.demoCount > 0} />}
+      </nav>
+
+      {demo && (
+        <div className="rounded-card border-2 border-sun-400 bg-sun-100 p-5">
+          <p className="text-lg font-extrabold text-sun-600">DATOS DE DEMOSTRACIÓN · no son resultados de validación</p>
+          <p className="mt-1 text-sm text-ink">
+            17 perfiles anonimizados construidos a partir de las entrevistas del Hito 1 (rubro, cargo, proyecto y dolores). Las respuestas en la
+            plataforma (calificaciones, preferencias A/B, tiempos y números) son simuladas y coherentes con lo que dijo cada entrevistado. Sirven para
+            mostrar cómo funciona el dashboard; no se usan para validar hipótesis. Para recorrer la app como uno de ellos, ingresa con su código (ej:
+            DEMO-12) en «Tengo un código».
+          </p>
+          {d.demoCount === 0 && <p className="mt-2 text-sm font-bold">Aún no hay datos demo cargados: usa «Cargar demo».</p>}
+        </div>
+      )}
+
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-coral-600">Hito 3 · Validación</p>
-          <h1 className="text-3xl font-extrabold sm:text-4xl">Resultados en vivo</h1>
+          <h1 className="text-3xl font-extrabold sm:text-4xl">{demo ? "Demo con perfiles de las entrevistas" : "Resultados en vivo"}</h1>
           <p className="text-sm text-muted">
-            Solo datos reales registrados · sesiones de prueba excluidas ({d.counts.test}) · {updated}
+            {demo ? "Datos simulados · " : `Solo datos reales registrados · sesiones de prueba excluidas (${d.counts.test}) · `}
+            {updated}
           </p>
         </div>
         <div className="flex gap-2">
           <a
-            href="/admin/export"
+            href={demo ? "/admin/export?vista=demo" : "/admin/export"}
             className="inline-flex items-center gap-2 rounded-full bg-coral-500 px-5 py-3 font-bold text-white hover:bg-coral-600"
           >
             <Download className="h-5 w-5" /> Exportar todo (CSV)

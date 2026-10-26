@@ -2,7 +2,7 @@
 
 import { useActionState, useTransition } from "react";
 import { LogOut, Plus, Trash2 } from "lucide-react";
-import { addIteration, adminLogin, adminLogout, deleteIteration, saveSettings, setTestFlag } from "@/app/actions/admin";
+import { addIteration, adminLogin, adminLogout, clearDemoData, deleteIteration, loadDemoData, saveSettings, setTestFlag } from "@/app/actions/admin";
 import { Button, Field, inputClass } from "@/components/ui";
 
 export function LoginForm() {
@@ -109,5 +109,27 @@ export function SettingsForm({ emp, ev, minN }: { emp: number; ev: number; minN:
         {pending ? "Guardando…" : state?.ok ? "Guardado ✓" : "Guardar"}
       </Button>
     </form>
+  );
+}
+
+export function DemoControls({ loaded }: { loaded: boolean }) {
+  const [loadState, load, loading] = useActionState(loadDemoData, null);
+  const [, clear, clearing] = useActionState(clearDemoData, null);
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <form action={load}>
+        <Button type="submit" variant="ghost" disabled={loading}>
+          {loading ? "Cargando…" : loaded ? "Recargar demo" : "Cargar demo"}
+        </Button>
+      </form>
+      {loaded && (
+        <form action={clear} onSubmit={(e) => !confirm("¿Borrar todos los datos de demostración?") && e.preventDefault()}>
+          <Button type="submit" variant="ghost" disabled={clearing}>
+            <Trash2 className="h-4 w-4" /> {clearing ? "Borrando…" : "Borrar demo"}
+          </Button>
+        </form>
+      )}
+      {loadState?.error && <p className="text-sm font-bold text-coral-700">{loadState.error}</p>}
+    </div>
   );
 }
