@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+/*
+  Identidad EmprendeRed
+  - Principal: verde petróleo "cordillera" (confianza, crecimiento)
+  - Acento: coral (acción, conexión)
+  - Fondo claro cálido con bloques de color: ni todo blanco (feedback Hito 1) ni oscuro (feedback Hito 2)
+*/
+@theme {
+  --color-brand-50: #e9f5f2;
+  --color-brand-100: #cfe9e3;
+  --color-brand-200: #9fd3c7;
+  --color-brand-300: #63b5a4;
+  --color-brand-400: #2f927f;
+  --color-brand-500: #0f7a68;
+  --color-brand-600: #0b6e5f;
+  --color-brand-700: #09584c;
+  --color-brand-800: #08463d;
+  --color-brand-900: #062f29;
+
+  --color-coral-50: #fff1ed;
+  --color-coral-100: #ffdcd2;
+  --color-coral-300: #ff9a80;
+  --color-coral-500: #ff6b4a;
+  --color-coral-600: #e9502f;
+  --color-coral-700: #c23d20;
+
+  --color-sun-100: #fff3cc;
+  --color-sun-400: #f5b82e;
+  --color-sun-600: #b7800a;
+
+  --color-ink: #12201d;
+  --color-muted: #5b6b67;
+  --color-line: #e3ded3;
+  --color-paper: #f7f6f2;
+  --color-sand: #efebe2;
+
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 1.25rem;
+}
+
+html {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+body {
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Números grandes con ancho fijo para que no "bailen" */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-coral-500);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Fondo con red de puntos para bandas de marca */
+.bg-network {
+  background-color: var(--color-brand-600);
+  background-image: radial-gradient(rgba(255, 255, 255, 0.14) 1.2px, transparent 1.2px);
+  background-size: 22px 22px;
+}
+
+@media print {
+  html,
+  body {
+    background: #fff !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+}
