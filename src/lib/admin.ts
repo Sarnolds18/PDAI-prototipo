@@ -8,7 +8,7 @@ const COOKIE = "er_admin";
 // El token depende de la contraseña: si se cambia ADMIN_PASSWORD, las sesiones viejas dejan de valer.
 function token(): string | null {
   const secret = process.env.SESSION_SECRET;
-  const pass = process.env.ADMIN_PASSWORD;
+  const pass = adminPassword();
   if (!secret || !pass) return null;
   return createHmac("sha256", secret).update(`admin:${pass}`).digest("base64url");
 }
@@ -19,9 +19,13 @@ const safeEqual = (a: string, b: string) => {
   return x.length === y.length && timingSafeEqual(x, y);
 };
 
+// Se ignoran espacios y saltos de línea en los extremos: al copiar/pegar la variable en Vercel
+// es fácil que quede un "\n" al final y la contraseña se vuelva imposible de escribir.
+const adminPassword = () => process.env.ADMIN_PASSWORD?.trim() ?? "";
+
 export function checkPassword(input: string): boolean {
-  const pass = process.env.ADMIN_PASSWORD;
-  return Boolean(pass) && safeEqual(input, pass as string);
+  const pass = adminPassword();
+  return pass.length > 0 && safeEqual(input.trim(), pass);
 }
 
 export async function setAdminCookie() {
