@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { connection } from "next/server";
 import { getParticipant, type Participant, type Role } from "@/lib/session";
 import { isDbConfigured } from "@/lib/supabase";
 import { EntryForm } from "./entry-form";
@@ -18,6 +19,8 @@ export async function ParticipantGate({
   intro: ReactNode;
   children: (p: Participant) => ReactNode;
 }) {
+  // Siempre en tiempo de request: sin esto, un build sin variables de entorno dejaría el aviso fijo en el HTML estático.
+  await connection();
   if (!isDbConfigured()) {
     return (
       <Card className="border-sun-400 bg-sun-100">
