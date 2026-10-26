@@ -1,5 +1,6 @@
 import { BadgeCheck, MapPin, Target } from "lucide-react";
-import { CashChart, SERIES_COLORS } from "@/components/cash-chart";
+import { CashChart } from "@/components/cash-chart";
+import { SERIES_COLORS } from "@/lib/chart-colors";
 import { EVIDENCE_TYPES, INDUSTRIES, label, SEEKING, SKILL_LEVELS, SKILLS, STAGES } from "@/lib/catalog";
 import { IRR_STATUS_TEXT, type FinanceSummary } from "@/lib/finance";
 import { formatCLPShort, formatNumber, formatPct } from "@/lib/format";

@@ -4,9 +4,6 @@ import { useState } from "react";
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { formatCLP, formatCLPShort } from "@/lib/format";
 
-// Paleta validada (validate_palette.js, --pairs all, fondo blanco): coral, verde, azul.
-// CVD en el borde (ΔE 8,0) → codificación secundaria: línea punteada + etiqueta directa al final.
-export const SERIES_COLORS = { coral: "#e9502f", green: "#00876c", blue: "#2a78d6" } as const;
 
 export type ChartSeries = { key: string; label: string; color: string; dashed?: boolean; values: number[] };
 
