@@ -339,8 +339,8 @@ function Done({ duration, profileId, onEdit }: { duration: number; profileId: st
         </Link>
         <Link href={`/ficha/${profileId}`} className="group rounded-card border border-line bg-white p-6 transition hover:bg-brand-50">
           <FileCheck2 className="h-8 w-8 text-brand-600" />
-          <p className="mt-3 text-xl font-extrabold">Ver mi ficha</p>
-          <p className="text-muted">Lo que recibe un mentor o inversionista.</p>
+          <p className="mt-3 text-xl font-extrabold">Ficha privada del equipo</p>
+          <p className="text-muted">Acceso con contraseña de administrador. Los evaluadores ven un ejemplo ficticio.</p>
           <ArrowRight className="mt-3 h-5 w-5 text-brand-600 transition group-hover:translate-x-1" />
         </Link>
       </div>

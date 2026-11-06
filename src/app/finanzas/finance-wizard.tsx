@@ -397,8 +397,8 @@ function DoneLinks({ duration, profileId }: { duration: number; profileId: strin
         {profileId ? (
           <Link href={`/ficha/${profileId}`} className="rounded-card border-2 border-coral-500 bg-white p-5 transition hover:bg-coral-50">
             <FileCheck2 className="h-7 w-7 text-coral-500" />
-            <p className="mt-2 text-lg font-extrabold">Ver mi ficha</p>
-            <p className="text-sm text-muted">Perfil + indicadores, lista para enviar.</p>
+            <p className="mt-2 text-lg font-extrabold">Ficha privada del equipo</p>
+            <p className="text-sm text-muted">Perfil e indicadores. Acceso con contraseña de administrador.</p>
           </Link>
         ) : (
           <Link href="/perfil" className="rounded-card border-2 border-coral-500 bg-white p-5 transition hover:bg-coral-50">

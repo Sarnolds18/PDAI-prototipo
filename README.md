@@ -14,7 +14,7 @@ Prototipo del Grupo 4 · Pensamiento de Diseño Aplicado a la Ingeniería · UAN
 | `/` | Todos | Propuesta de valor y acceso | — |
 | `/perfil` | Emprendedores | Perfil validado: competencias con evidencia y descripción estandarizada. Mide tiempo y autonomía | H6 |
 | `/finanzas` | Emprendedores | Plantilla guiada: flujo de caja, VAN, TIR, equilibrio y escenarios | H3 |
-| `/ficha/[id]` | Mentores e inversionistas | Ficha estandarizada imprimible / PDF | — |
+| `/ficha/[id]` | Equipo administrador | Ficha privada imprimible / PDF (requiere sesión de admin) | — |
 | `/conexiones` | Emprendedores | Top 3 socios, mentores e inversionistas con motivo del match; calificación 1–5 | H1 |
 | `/pacto` | Emprendedores con socio | Pacto de socios guiado y documento resumen | H4 |
 | `/evaluar` | Evaluadores | Test A/B: contacto en frío vs ficha estandarizada | H2, H3, H5 |
@@ -127,6 +127,6 @@ src/
 supabase/         schema.sql y seed.sql
 ```
 
-**Seguridad:** todas las tablas tienen RLS sin políticas públicas, y solo el servidor accede con la service role key. Las sesiones usan cookies firmadas. La ficha pública no muestra el email ni los datos de contacto de las referencias.
+**Seguridad:** todas las tablas tienen RLS sin políticas públicas, y solo el servidor accede con la service role key. Las sesiones usan cookies firmadas. Las fichas reales requieren una sesión de administrador, con la contraseña configurada en `ADMIN_PASSWORD`; el equipo autorizado usa ese acceso. Sin esa sesión, `/ficha/[id]` redirige a `/admin` antes de consultar datos. Los evaluadores en `/evaluar` siguen viendo exclusivamente el proyecto ficticio. Los participantes conservan el acceso a sus propios formularios mediante su código.
 
 **Stack:** Next.js 16 (App Router), TypeScript, Tailwind CSS 4, Supabase (Postgres), Recharts y Vercel.
