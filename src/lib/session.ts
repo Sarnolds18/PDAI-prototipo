@@ -24,21 +24,25 @@ function secret(): string {
   return s;
 }
 
-function sign(id: string): string {
-  return createHmac("sha256", secret()).update(id).digest("base64url");
+function sign(role: Role, payload: string): string {
+  return createHmac("sha256", secret()).update(`participant-session-v2:${role}:${payload}`).digest("base64url");
 }
 
-function verify(value: string): string | null {
-  const [id, sig] = value.split(".");
-  if (!id || !sig) return null;
-  const expected = Buffer.from(sign(id));
+function verify(role: Role, value: string): string | null {
+  const parts = value.split(".");
+  if (parts.length !== 3) return null;
+  const [id, expires, sig] = parts;
+  if (!id || !expires || !sig) return null;
+  const expected = Buffer.from(sign(role, `${id}.${expires}`));
   const given = Buffer.from(sig);
   if (expected.length !== given.length || !timingSafeEqual(expected, given)) return null;
+  if (!Number.isFinite(Number(expires)) || Number(expires) <= Date.now()) return null;
   return id;
 }
 
 export async function setSession(role: Role, participantId: string) {
-  (await cookies()).set(cookieName(role), `${participantId}.${sign(participantId)}`, {
+  const payload = `${participantId}.${Date.now() + MAX_AGE * 1000}`;
+  (await cookies()).set(cookieName(role), `${payload}.${sign(role, payload)}`, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -55,7 +59,7 @@ export async function clearSession(role: Role) {
 export async function getParticipant(role: Role): Promise<Participant | null> {
   const raw = (await cookies()).get(cookieName(role))?.value;
   if (!raw) return null;
-  const id = verify(raw);
+  const id = verify(role, raw);
   if (!id) return null;
   const { data } = await db()
     .from("participants")

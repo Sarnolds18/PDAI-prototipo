@@ -6,6 +6,12 @@ import { checkTeamCredentials, clearAdminCookie, isAdmin, setAdminCookie } from 
 import { clearDemo, seedDemo } from "@/lib/demo-seed";
 import { db } from "@/lib/supabase";
 
+import { generateRecoveryCode, type RecoveryCodeState } from "@/lib/participant-manual-access";
+
+export async function createParticipantRecoveryCode(_prev: RecoveryCodeState, form: FormData): Promise<RecoveryCodeState> {
+  return generateRecoveryCode(String(form.get("participantId") ?? ""), form.get("confirmed") === "on");
+}
+
 export type AdminState = { error?: string; ok?: boolean } | null;
 
 async function guard() {

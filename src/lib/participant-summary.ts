@@ -1,5 +1,6 @@
 import "server-only";
-import { requireParticipant } from "./session";
+import { isAdmin } from "./admin";
+import { requireParticipant, type Participant } from "./session";
 import { db } from "./supabase";
 import { loadMatches } from "./connections";
 import type { ProfileRow } from "./types";
@@ -7,7 +8,10 @@ import type { FinanceInputs, FinanceSummary } from "./finance";
 import type { PactData } from "./pact";
 
 export async function loadEntrepreneurSummary() {
-  const participant = await requireParticipant("emprendedor");
+  return loadEntrepreneurData(await requireParticipant("emprendedor"));
+}
+
+async function loadEntrepreneurData(participant: Participant) {
   // La identidad viene exclusivamente de la cookie firmada, nunca de la URL.
   const results = await Promise.all([
     db().from("profiles").select("*").eq("participant_id", participant.id).maybeSingle(),
@@ -45,7 +49,10 @@ export type EvaluationSummary = {
 };
 
 export async function loadEvaluatorSummary() {
-  const participant = await requireParticipant("evaluador");
+  return loadEvaluatorData(await requireParticipant("evaluador"));
+}
+
+async function loadEvaluatorData(participant: Participant) {
   const { data, error } = await db().from("evaluations")
     .select("variant, evaluator_type, meeting_score, meeting_yes, defensibility, would_receive, comment, saw_other, preferred, preferred_why, answered_at, completed_at")
     .eq("participant_id", participant.id).maybeSingle();
@@ -54,3 +61,17 @@ export async function loadEvaluatorSummary() {
 }
 
 export type EntrepreneurSummary = Awaited<ReturnType<typeof loadEntrepreneurSummary>>;
+
+
+/** Consulta administrativa: autorizar antes de resolver el ID solicitado. No crea sesiones de participantes. */
+export async function loadAdminParticipantSummary(id: string) {
+  if (!(await isAdmin())) throw new Error("No autorizado");
+  const { data, error } = await db().from("participants")
+    .select("id, code, name, email, role, is_test").eq("id", id).maybeSingle();
+  if (error) throw new Error("No pudimos cargar el participante.");
+  if (!data) return null;
+  const participant = data as Participant;
+  if (participant.role === "emprendedor") return { role: "emprendedor" as const, summary: await loadEntrepreneurData(participant) };
+  if (participant.role === "evaluador") return { role: "evaluador" as const, summary: await loadEvaluatorData(participant) };
+  return null;
+}

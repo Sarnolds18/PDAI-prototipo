@@ -21,7 +21,7 @@ export default function EvaluarPage() {
             <>
               <ClipboardCheck className="mx-auto h-10 w-10 text-brand-600" />
               <p className="mt-2 text-xl font-extrabold">Antes de empezar</p>
-              <p className="text-muted">Solo nombre y email, para no contar dos veces la misma evaluación.</p>
+              <p className="text-muted">Ingresa tu nombre y correo. Si ya evaluaste, recupera tu acceso para conservar tus respuestas.</p>
             </>
           }
         >

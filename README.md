@@ -32,7 +32,8 @@ Requisitos: Node.js 20 o superior y una cuenta gratuita de [Supabase](https://su
    - `supabase/schema.sql` (tablas y seguridad)
    - `supabase/seed.sql` (15 perfiles de demostración y configuración)
 2. **Variables de entorno.** Copia `.env.example` a `.env.local` y completa:
-   - `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`: Supabase → Project Settings → API (usa la clave **service_role**).
+   - `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`: del mismo proyecto de Supabase, para leer y escribir datos solo en el servidor.
+   - `SUPABASE_ANON_KEY`: opcional mientras el envío automático esté apagado. Se usa solo si se activa el OTP por correo.
    - `SESSION_SECRET`: genera una con `openssl rand -base64 32`.
    - `ADMIN_PASSWORD`: la contraseña del dashboard.
 3. **Instalar y correr:**
@@ -49,7 +50,7 @@ Requisitos: Node.js 20 o superior y una cuenta gratuita de [Supabase](https://su
 ## Desplegar en Vercel
 
 1. En [vercel.com/new](https://vercel.com/new), importa `Sarnolds18/PDAI-prototipo`. Next.js se detecta solo.
-2. En **Environment Variables**, agrega las mismas 4 variables de `.env.local`.
+2. En **Environment Variables**, agrega las variables necesarias de `.env.local`.
 3. Haz clic en **Deploy**. Cada `git push` a `main` vuelve a desplegar.
 
 Alternativa por terminal: `npx vercel` (primera vez) y `npx vercel --prod`.
@@ -65,7 +66,7 @@ Reemplaza `TU-DOMINIO` por la URL de Vercel (ej. `emprendered.vercel.app`).
 | Mentores, inversionistas, evaluadores | `https://TU-DOMINIO/evaluar` | «Evalúa un proyecto en 3 minutos.» |
 | Demo del pitch | `https://TU-DOMINIO/perfil?demo=1` | Las sesiones con `?demo=1` quedan marcadas como prueba y **no cuentan** para la validación. |
 
-Recorrido completo del emprendedor: `/perfil` → `/finanzas` → `/conexiones` → (opcional) `/pacto`. Cada participante recibe un código `ER-XXXX` para retomar desde cualquier dispositivo.
+Recorrido completo del emprendedor: `/perfil` → `/finanzas` → `/conexiones` → (opcional) `/pacto`. Cada registro tiene un código `ER-XXXX` interno, visible solo en administración. No permite iniciar sesión. Los participantes conservan su sesión en el navegador. Para recuperar un perfil, contactan a sarnolds@miuandes.cl y el equipo entrega un código temporal. El ID `ER-XXXX` no permite ingresar.
 
 ### Protocolo para que los datos sirvan
 
@@ -131,7 +132,7 @@ src/
 supabase/         schema.sql y seed.sql
 ```
 
-**Seguridad:** todas las tablas tienen RLS sin políticas públicas, y solo el servidor accede con la service role key. Las sesiones usan cookies firmadas. Las fichas reales requieren una sesión de administrador, con correo autorizado (`sarnolds@miuandes.cl` o `admin@example.cl`) y la clave compartida configurada en `ADMIN_PASSWORD`. El ingreso está en `/equipo`, sin enlaces en las pantallas de participantes. Sin sesión, `/admin` y `/ficha/[id]` muestran página no encontrada antes de consultar datos. El correo es un filtro junto a la clave compartida, no una verificación de la propiedad del buzón. Las sesiones caducan a las 12 horas; las cookies antiguas de contraseña dejan de valer. Las fichas se abren desde la tabla de participantes del panel. Los evaluadores en `/evaluar` siguen viendo exclusivamente el proyecto ficticio. Los participantes conservan el acceso a sus propios formularios mediante su código.
+**Seguridad:** todas las tablas tienen RLS sin políticas públicas, y solo el servidor accede con la service role key. Las sesiones usan cookies firmadas. Las fichas reales requieren una sesión de administrador, con correo autorizado (`sarnolds@miuandes.cl` o `admin@example.cl`) y la clave compartida configurada en `ADMIN_PASSWORD`. El ingreso está en `/equipo`, sin enlaces en las pantallas de participantes. Sin sesión, `/admin` y `/ficha/[id]` muestran página no encontrada antes de consultar datos. El correo es un filtro junto a la clave compartida, no una verificación de la propiedad del buzón. Las sesiones caducan a las 12 horas; las cookies antiguas de contraseña dejan de valer. Las fichas se abren desde la tabla de participantes del panel. Los evaluadores en `/evaluar` siguen viendo exclusivamente el proyecto ficticio. En el modo del pitch, el registro abre una sesión para el registro nuevo, sin verificar el correo declarado. Recuperar un registro anterior exige un código emitido por un administrador tras revisar la solicitud. No hay ingreso mediante el identificador interno.
 
 **Stack:** Next.js 16 (App Router), TypeScript, Tailwind CSS 4, Supabase (Postgres), Recharts y Vercel.
 
@@ -143,3 +144,38 @@ La navegación «Mi perfil» abre el resumen del rol con sesión activa. Si una 
 El resumen del emprendedor destaca los resultados financieros guardados al finalizar la plantilla, una conexión por tipo (primero por calificación propia y luego por afinidad), y el pacto completado. Los módulos pendientes muestran cómo continuarlos; el pacto es opcional. Las sugerencias de demostración se identifican como tales. Guardar un pacto no significa firmarlo.
 
 Los campos financieros incluyen explicaciones visibles y ejemplos desplegables. Los ejemplos no se guardan como respuestas. Las preguntas del perfil, pacto, evaluación y conexiones incluyen ayudas sobre qué responder.
+
+
+## Consulta administrativa y códigos internos
+
+Desde `/admin`, pulsa el nombre del participante para abrir `/admin/participantes/[id]`. El equipo puede leer el resumen completo según su rol; no se crea una sesión a nombre de esa persona ni aparecen acciones para responder por ella. Esta ruta verifica la sesión de administrador antes de consultar cualquier dato. Los códigos se conservan para identificación interna y exportaciones; ya no se muestran a participantes ni sirven para recuperar sesiones. Las sesiones de versiones antiguas dejan de ser válidas con esta versión. La persona solicita recuperar un perfil al equipo, que selecciona el registro correcto y emite un código. Las sesiones nuevas llevan rol y vencimiento firmados (90 días); las sesiones del equipo administrador no cambian.
+
+Para proteger las direcciones generadas de despliegues (incluidas versiones anteriores con el ingreso por código), configura en Vercel → proyecto → Settings → Deployment Protection → Vercel Authentication → Standard Protection → Save. Este alcance protege los dominios de despliegue y deja públicos los dominios de producción. Usa el dominio estable de producción para participantes. No selecciones All Deployments si el sitio de producción debe seguir abierto. Esta configuración de hosting no se modifica desde el repositorio. `/equipo` en producción sigue siendo una pantalla de ingreso; conocer su dirección no concede acceso a datos.
+
+
+## Modo del pitch: registro simple y recuperación con ayuda del equipo
+
+El envío automático de correos queda **desactivado por defecto**. No necesitas SMTP, contraseñas de Gmail ni nuevos cambios SQL para el pitch. `PARTICIPANT_EMAIL_OTP_ENABLED=false` (o variable ausente) mantiene este modo. Aunque alguien intente llamar a las acciones de envío/verificación, el servidor las rechaza mientras estén apagadas.
+
+1. La persona se registra con nombre, correo y consentimiento. Su sesión abre únicamente el registro nuevo; escribir el correo de otra persona no recupera sus datos.
+2. Si pierde la sesión, selecciona **Recuperar acceso** y escribe manualmente a `sarnolds@miuandes.cl` con su nombre, correo usado y rol.
+3. El equipo ingresa por `/equipo`, abre `/admin` y pulsa el nombre del participante para revisar el perfil correcto.
+4. En **Recuperación de acceso**, confirma que verificó la solicitud y pulsa **Generar código de recuperación**.
+5. Copia el código `REC-…` y envíalo manualmente a la persona. Dura una hora, funciona una sola vez y generar otro invalida el anterior.
+6. La persona ingresa su correo y ese código en **Recuperar acceso**. Se abre únicamente el perfil que seleccionó el administrador.
+
+Los códigos se generan en el servidor con aleatoriedad criptográfica. Solo se guarda su hash en una fila privada de `settings` por participante; no se incluyen en la configuración pública ni se necesita una tabla adicional. El consumo usa un borrado atómico con el hash como condición para impedir dos usos simultáneos. Los identificadores `ER-XXXX` siguen siendo internos y no sirven para ingresar. Los registros nuevos no tienen contraseña de participante; se recupera el acceso, no una contraseña.
+
+## En espera: activar códigos automáticos por correo más adelante
+
+Este flujo está conservado en `participant-access.ts` y `email-otp-form.tsx`. Para activarlo, completa primero la configuración siguiente y luego define `PARTICIPANT_EMAIL_OTP_ENABLED=true` en Vercel. El acceso del equipo por `/equipo` conserva la clave actual.
+
+1. En Vercel → proyecto → Settings → Environment Variables, añade `SUPABASE_ANON_KEY` con la clave **anon o publishable** del mismo proyecto de Supabase. Añádela también a `.env.local` para probar en local. No uses la service_role en esta variable.
+2. En Supabase → Authentication → Sign In / Providers → Email, activa el proveedor de correo y la confirmación de correo. Mantén habilitada la creación de usuarios de Auth: los participantes históricos aún no tienen usuario en Auth. Configura **Email OTP expiration = 600 segundos**. El navegador también debe completar la solicitud dentro de 10 minutos.
+3. En Authentication → Email Templates, coloca el contenido de [supabase/otp-email.html](supabase/otp-email.html) en las plantillas **Confirm signup** y **Magic Link**. Deben contener `{{ .Token }}` para enviar un código, en lugar de solo un enlace. No se necesita una ruta de callback para este flujo.
+4. En Authentication → configuración de SMTP, configura un proveedor de envío con remitente autorizado. El SMTP de prueba de Supabase solo permite destinatarios del equipo del proyecto; no sirve para enviar códigos a todos los participantes. Sigue la [guía oficial de SMTP](https://supabase.com/docs/guides/auth/auth-smtp).
+5. Despliega y prueba con un correo que controles: Primera vez → recibir código → verificar → completar perfil → salir → Ya participé → solicitar un código nuevo → recuperar el mismo perfil. Comprueba también el otro rol. No se requiere ejecutar SQL adicional.
+
+El código se verifica con Supabase Auth mediante un cliente nuevo por operación. No se autentica el cliente compartido con service_role. El servidor vincula el perfil al correo verificado y al rol, nunca a un ID enviado sin autorización. No se guardan OTP en la base del prototipo ni se devuelven tokens de Auth al navegador. Supabase aplica sus límites de envío y verificación; si un reenvío se rechaza, la pantalla permite seguir verificando la solicitud anterior. Los registros de participantes solo se crean después de verificar el correo y aceptar el consentimiento. El modo Ya participé no crea un registro de participante si no encuentra coincidencias.
+
+No se ha comprobado entrega real de correo desde este entorno; las pruebas automatizadas simulan el servicio de Auth. Para probar con participantes debe completarse la configuración anterior. Referencia del flujo: [Email OTP en Supabase](https://supabase.com/docs/guides/auth/auth-email-passwordless).

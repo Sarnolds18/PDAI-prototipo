@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { connection } from "next/server";
 import { getParticipant, type Participant, type Role } from "@/lib/session";
 import { isDbConfigured, missingEnv } from "@/lib/supabase";
+import { emailOtpEnabled } from "@/lib/access-mode";
 import { EntryForm } from "./entry-form";
 import { LeaveButton } from "./leave-button";
 import { Badge, Card } from "./ui";
@@ -38,7 +39,7 @@ export async function ParticipantGate({
     return (
       <Card className="py-8">
         <div className="mx-auto mb-6 max-w-md text-center">{intro}</div>
-        <EntryForm role={role} />
+        <EntryForm role={role} emailOtpEnabled={emailOtpEnabled()} />
       </Card>
     );
   }
@@ -49,9 +50,6 @@ export async function ParticipantGate({
         <span>
           Hola, <b className="text-ink">{participant.name.includes("·") ? participant.name.split("·")[0].trim() : participant.name.split(" ")[0]}</b>
         </span>
-        <Badge tone="muted">
-          Tu código: <span className="tracking-widest text-ink">{participant.code}</span>
-        </Badge>
         {participant.is_test && <Badge tone="sun">Demo</Badge>}
         <LeaveButton role={role} />
       </div>

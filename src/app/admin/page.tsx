@@ -84,8 +84,7 @@ function Dashboard({ d }: { d: AdminData }) {
           <p className="mt-1 text-sm text-ink">
             17 perfiles anonimizados construidos a partir de las entrevistas del Hito 1 (rubro, cargo, proyecto y dolores). Las respuestas en la
             plataforma (calificaciones, preferencias A/B, tiempos y números) son simuladas y coherentes con lo que dijo cada entrevistado. Sirven para
-            mostrar cómo funciona el dashboard; no se usan para validar hipótesis. Para recorrer la app como uno de ellos, ingresa con su código (ej:
-            DEMO-12) en «Tengo un código».
+            mostrar cómo funciona el dashboard; no se usan para validar hipótesis. Abre el nombre del participante en la tabla para consultar su perfil en modo de solo lectura.
           </p>
           {d.demoCount === 0 && <p className="mt-2 text-sm font-bold">Aún no hay datos demo cargados: usa «Cargar demo».</p>}
         </div>
@@ -454,7 +453,7 @@ function ParticipantsTable({ d }: { d: AdminData }) {
           {[...d.participants].reverse().map((p) => (
             <tr key={p.id} className={`border-t border-line ${p.is_test ? "bg-sun-100/50 text-muted" : ""}`}>
               <td className="tabular px-4 py-2 font-bold tracking-wider">{p.code}</td>
-              <td className="px-4 py-2">{p.name}</td>
+              <td className="px-4 py-2"><Link className="font-bold text-brand-700 underline" href={`/admin/participantes/${p.id}`}>{p.name}</Link></td>
               <td className="px-4 py-2">{p.role}</td>
               <td className="px-4 py-2 text-xs">{new Date(p.created_at).toLocaleDateString("es-CL")}</td>
               <td className="px-4 py-2 text-center">

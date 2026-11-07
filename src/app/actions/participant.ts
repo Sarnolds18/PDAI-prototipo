@@ -1,68 +1,55 @@
 "use server";
 
-import { randomInt } from "node:crypto";
-import { db } from "@/lib/supabase";
-import { clearSession, setSession, type Role } from "@/lib/session";
+import { revalidatePath } from "next/cache";
+import { emailOtpEnabled } from "@/lib/access-mode";
+import { recoverParticipant, registerParticipant } from "@/lib/participant-manual-access";
+import { clearSession, type Role } from "@/lib/session";
+import {
+  requestParticipantOtp, resendParticipantOtp, selectVerifiedParticipant, verifyParticipantOtp,
+  type EntryState,
+} from "@/lib/participant-access";
 
-export type EntryState = { error?: string; code?: string } | null;
+export type { EntryState } from "@/lib/participant-access";
 
-// Sin 0/O ni 1/I para que el código se pueda dictar sin errores.
-const ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
-const newCode = () =>
-  "ER-" + Array.from({ length: 4 }, () => ALPHABET[randomInt(ALPHABET.length)]).join("");
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function parseRole(v: FormDataEntryValue | null): Role {
-  return v === "evaluador" ? "evaluador" : "emprendedor";
-}
-
-export async function startParticipant(_prev: EntryState, form: FormData): Promise<EntryState> {
-  const role = parseRole(form.get("role"));
-  const name = String(form.get("name") ?? "").trim();
-  const email = String(form.get("email") ?? "").trim().toLowerCase();
-  const consent = form.get("consent") === "on";
-  const isTest = form.get("demo") === "1";
-
-  if (!process.env.SESSION_SECRET) return { error: "El servidor no está configurado (falta SESSION_SECRET)." };
-  if (name.length < 2) return { error: "Escribe tu nombre." };
-  if (!EMAIL_RE.test(email)) return { error: "Revisa tu email." };
-  if (!consent) return { error: "Necesitamos tu consentimiento para continuar." };
-
-  // Reintenta si el código aleatorio ya existe (unique en la tabla).
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const code = newCode();
-    const { data, error } = await db()
-      .from("participants")
-      .insert({ code, name, email, role, consent, consent_at: new Date().toISOString(), is_test: isTest })
-      .select("id, code")
-      .single();
-    if (!error && data) {
-      await setSession(role, data.id);
-      return { code: data.code };
+/** El OTP automático solo se atiende cuando está habilitado en el servidor. */
+export async function participantEntry(_prev: EntryState, form: FormData): Promise<EntryState> {
+  const role = form.get("role");
+  if (role !== "emprendedor" && role !== "evaluador") return { stage: "request", error: "Selecciona un rol válido." };
+  const intent = form.get("intent");
+  let result: EntryState;
+  if (!emailOtpEnabled()) {
+    if (intent === "register") {
+      result = await registerParticipant({ role, email: String(form.get("email") ?? ""), name: String(form.get("name") ?? ""), consent: form.get("consent") === "on", isTest: form.get("demo") === "1" });
+    } else if (intent === "recover") {
+      result = await recoverParticipant(role, String(form.get("email") ?? ""), String(form.get("token") ?? ""));
+    } else {
+      return { stage: "request", error: "El envío automático está desactivado. Contacta a sarnolds@miuandes.cl para recuperar tu acceso." };
     }
-    if (error && error.code !== "23505") {
-      console.error("startParticipant", error);
-      return { error: "No pudimos guardar tus datos. Intenta de nuevo." };
-    }
+    if (result?.ok) revalidatePath("/", "layout");
+    return result;
   }
-  return { error: "No pudimos generar tu código. Intenta de nuevo." };
-}
-
-export async function resumeParticipant(_prev: EntryState, form: FormData): Promise<EntryState> {
-  const role = parseRole(form.get("role"));
-  const code = String(form.get("code") ?? "").trim().toUpperCase().replace(/^ER-?/, "ER-");
-  const { data } = await db()
-    .from("participants")
-    .select("id, code")
-    .eq("code", code)
-    .eq("role", role)
-    .maybeSingle();
-  if (!data) return { error: "No encontramos ese código." };
-  await setSession(role, data.id);
-  return { code: data.code };
+  if (intent === "request") {
+    const mode = form.get("mode");
+    if (mode !== "signup" && mode !== "resume") return { stage: "request", error: "Selecciona cómo quieres ingresar." };
+    result = await requestParticipantOtp({
+      role, mode, email: String(form.get("email") ?? ""), name: String(form.get("name") ?? ""),
+      consent: form.get("consent") === "on", isTest: form.get("demo") === "1",
+    });
+  } else if (intent === "verify") {
+    result = await verifyParticipantOtp(role, String(form.get("token") ?? ""));
+  } else if (intent === "resend") {
+    result = await resendParticipantOtp(role);
+  } else if (intent === "select") {
+    result = await selectVerifiedParticipant(role, String(form.get("participantId") ?? ""));
+  } else {
+    return { stage: "request", error: "Solicita un código para comenzar." };
+  }
+  if (result?.ok) revalidatePath("/", "layout");
+  return result;
 }
 
 export async function leaveParticipant(role: Role) {
+  if (role !== "emprendedor" && role !== "evaluador") return;
   await clearSession(role);
+  revalidatePath("/", "layout");
 }

@@ -37,7 +37,7 @@ export default function PerfilPage() {
             <>
               <BadgeCheck className="mx-auto h-10 w-10 text-brand-600" />
               <p className="mt-2 text-xl font-extrabold">Crea tu perfil</p>
-              <p className="text-muted">Solo nombre y email. Te damos un código para volver cuando quieras.</p>
+              <p className="text-muted">Ingresa tu nombre y correo para comenzar. Si ya participaste, recupera el acceso a tu perfil anterior.</p>
             </>
           }
         >

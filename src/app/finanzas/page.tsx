@@ -22,7 +22,7 @@ export default function FinanzasPage() {
             <>
               <ChartLine className="mx-auto h-10 w-10 text-brand-600" />
               <p className="mt-2 text-xl font-extrabold">Ingresa para armar tus números</p>
-              <p className="text-muted">Si ya creaste tu perfil, usa tu código.</p>
+              <p className="text-muted">Si ya creaste tu perfil, usa la opción para recuperar tu acceso y conservar tus datos.</p>
             </>
           }
         >

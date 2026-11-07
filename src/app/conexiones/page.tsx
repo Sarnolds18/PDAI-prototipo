@@ -23,7 +23,7 @@ export default function ConexionesPage() {
             <>
               <Handshake className="mx-auto h-10 w-10 text-brand-600" />
               <p className="mt-2 text-xl font-extrabold">Ingresa para ver tus conexiones</p>
-              <p className="text-muted">Usa tu código si ya creaste tu perfil.</p>
+              <p className="text-muted">Si ya participaste, selecciona la opción para recuperar tu acceso.</p>
             </>
           }
         >

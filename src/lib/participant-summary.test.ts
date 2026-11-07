@@ -3,16 +3,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   requireParticipant: vi.fn(),
   loadMatches: vi.fn(),
+  isAdmin: vi.fn(),
+  adminParticipant: null as null | { id: string; role: string; code: string },
   filters: [] as { table: string; field: string; value: string }[],
   tables: [] as string[],
   errorTable: "",
 }));
 vi.mock("server-only", () => ({}));
+vi.mock("./admin", () => ({ isAdmin: mocks.isAdmin }));
 vi.mock("./session", () => ({ requireParticipant: mocks.requireParticipant }));
 vi.mock("./connections", () => ({ loadMatches: mocks.loadMatches }));
 vi.mock("./supabase", () => ({ db: () => ({ from: (table: string) => {
   mocks.tables.push(table);
-  const result = Promise.resolve({ data: table === "match_suggestions" ? [] : null, error: mocks.errorTable === table ? { message: "offline" } : null });
+  const result = Promise.resolve({ data: table === "participants" ? mocks.adminParticipant : table === "match_suggestions" ? [] : null, error: mocks.errorTable === table ? { message: "offline" } : null });
   const query = {
     select: () => query,
     eq: (field: string, value: string) => { mocks.filters.push({ table, field, value }); return query; },
@@ -22,13 +25,15 @@ vi.mock("./supabase", () => ({ db: () => ({ from: (table: string) => {
   return query;
 } }) }));
 
-import { loadEntrepreneurSummary, loadEvaluatorSummary } from "./participant-summary";
+import { loadAdminParticipantSummary, loadEntrepreneurSummary, loadEvaluatorSummary } from "./participant-summary";
 
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.filters.length = 0;
   mocks.tables.length = 0;
   mocks.errorTable = "";
+  mocks.isAdmin.mockResolvedValue(false);
+  mocks.adminParticipant = null;
   mocks.requireParticipant.mockResolvedValue({ id: "own-session-id", name: "Participante" });
   mocks.loadMatches.mockResolvedValue(null);
 });
@@ -66,5 +71,32 @@ describe("resúmenes personales", () => {
     await expect(loadEntrepreneurSummary()).rejects.toThrow("No pudimos cargar");
     mocks.errorTable = "evaluations";
     await expect(loadEvaluatorSummary()).rejects.toThrow("No pudimos cargar");
+  });
+});
+
+
+describe("consulta administrativa de perfiles", () => {
+  it("rechaza consultar IDs ajenos sin autorización de administrador, antes de consultar datos", async () => {
+    await expect(loadAdminParticipantSummary("someone-else")).rejects.toThrow("No autorizado");
+    expect(mocks.tables).toEqual([]);
+  });
+
+  it("permite al admin leer el perfil seleccionado sin cambiar su sesión de participante", async () => {
+    mocks.isAdmin.mockResolvedValue(true);
+    mocks.adminParticipant = { id: "selected-person", role: "emprendedor", code: "ER-TEST" };
+    const result = await loadAdminParticipantSummary("selected-person");
+    expect(result?.role).toBe("emprendedor");
+    expect(mocks.filters[0]).toEqual({ table: "participants", field: "id", value: "selected-person" });
+    for (const filter of mocks.filters.slice(1)) expect(filter.value).toBe("selected-person");
+    expect(mocks.requireParticipant).not.toHaveBeenCalled();
+  });
+
+  it("separa los perfiles de evaluadores al consultarlos desde admin", async () => {
+    mocks.isAdmin.mockResolvedValue(true);
+    mocks.adminParticipant = { id: "selected-evaluator", role: "evaluador", code: "ER-TEST" };
+    const result = await loadAdminParticipantSummary("selected-evaluator");
+    expect(result?.role).toBe("evaluador");
+    expect(mocks.tables).toEqual(["participants", "evaluations"]);
+    expect(mocks.filters[1].value).toBe("selected-evaluator");
   });
 });

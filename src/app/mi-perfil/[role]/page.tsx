@@ -15,7 +15,7 @@ export default function RoleProfilePage({ params }: Props) {
 async function RoleContent({ params }: Props) {
   const { role } = await params;
   if (role !== "emprendedor" && role !== "evaluador") notFound();
-  return <ParticipantGate role={role} intro={<><h1 className="text-2xl font-extrabold">Tu perfil de {role}</h1><p className="mt-2 text-muted">Si ya participaste, selecciona “Tengo un código” para recuperar tu resumen.</p></>}>
+  return <ParticipantGate role={role} intro={<><h1 className="text-2xl font-extrabold">Tu perfil de {role}</h1><p className="mt-2 text-muted">Si ya participaste, selecciona la opción para recuperar tu acceso.</p></>}>
         {() => role === "emprendedor" ? <EntrepreneurProfile /> : <EvaluatorProfile />}
       </ParticipantGate>;
 }

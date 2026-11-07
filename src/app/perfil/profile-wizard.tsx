@@ -151,7 +151,7 @@ export function ProfileWizard({ initial, completed, durationS, profileId }: Prop
             <div className="h-full rounded-full bg-brand-600 transition-all" style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} />
           </div>
         </div>
-        <p className="mt-6 hidden text-sm leading-relaxed text-muted lg:block">Guardamos cada paso al continuar. Puedes volver con tu código de participante.</p>
+        <p className="mt-6 hidden text-sm leading-relaxed text-muted lg:block">Guardamos cada paso al continuar. Puedes continuar aquí. Si pierdes la sesión, solicita ayuda al equipo desde Recuperar acceso.</p>
       </aside>
       <Card className="min-w-0 sm:p-8">
         <header className="mb-7 border-b border-line pb-6">
