@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import { computeFinance, DEFAULT_INPUTS, summarize, type FinanceInputs } from "@/lib/finance";
 import { requireParticipant } from "@/lib/session";
 import { db } from "@/lib/supabase";
@@ -45,6 +47,7 @@ export async function saveFinanceStep(step: number, inputs: Partial<FinanceInput
     .eq("participant_id", p.id);
   if (error) return { error: "No pudimos guardar. Revisa tu conexión." };
   await db().from("events").insert({ participant_id: p.id, module: "finanzas", type: "step_done", step });
+  revalidatePath("/mi-perfil/emprendedor");
   return { ok: true };
 }
 
@@ -77,5 +80,6 @@ export async function completeFinance(inputs: Partial<FinanceInputs>, neededHelp
   if (!row.completed) await db().from("events").insert({ participant_id: p.id, module: "finanzas", type: "complete" });
 
   const { data: profile } = await db().from("profiles").select("id").eq("participant_id", p.id).maybeSingle();
+  revalidatePath("/mi-perfil/emprendedor");
   return { ok: true, duration_s: duration_s ?? 0, profileId: (profile?.id as string | undefined) ?? null };
 }

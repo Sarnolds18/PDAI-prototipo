@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { isAdmin } from "@/lib/admin";
 import { FichaView, type FichaData } from "@/components/ficha-view";
 import { Skeleton } from "@/components/ui";
@@ -29,7 +29,7 @@ export default function FichaPage({ params }: PageProps<"/ficha/[id]">) {
 
 async function Ficha({ params }: { params: Promise<{ id: string }> }) {
   // La service role omite RLS: autorizar antes de consultar cualquier dato real.
-  if (!(await isAdmin())) redirect("/admin");
+  if (!(await isAdmin())) notFound();
 
   const { id } = await params;
   if (!UUID_RE.test(id)) notFound();

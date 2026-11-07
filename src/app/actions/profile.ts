@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import { AGE_RANGES, EVIDENCE_TYPES, INDUSTRIES, OBSTACLES, REGIONS, SEEKING, SKILLS, STAGES } from "@/lib/catalog";
 import { requireParticipant } from "@/lib/session";
 import { db } from "@/lib/supabase";
@@ -68,6 +70,7 @@ export async function saveProfileStep(step: number, partial: Partial<ProfileData
     return { error: "No pudimos guardar. Revisa tu conexión e intenta de nuevo." };
   }
   await db().from("events").insert({ participant_id: p.id, module: "perfil", type: "step_done", step });
+  revalidatePath("/mi-perfil/emprendedor");
   return { ok: true };
 }
 
@@ -100,5 +103,6 @@ export async function completeProfile(input: { main_obstacle: string | null; nee
     .eq("id", row.id);
   if (error) return { error: "No pudimos guardar. Intenta de nuevo." };
   if (!row.completed) await db().from("events").insert({ participant_id: p.id, module: "perfil", type: "complete" });
+  revalidatePath("/mi-perfil/emprendedor");
   return { ok: true, duration_s: duration_s ?? 0, profileId: row.id as string };
 }

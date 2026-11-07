@@ -1,7 +1,8 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { checkPassword, clearAdminCookie, isAdmin, setAdminCookie } from "@/lib/admin";
+import { checkTeamCredentials, clearAdminCookie, isAdmin, setAdminCookie } from "@/lib/admin";
 import { clearDemo, seedDemo } from "@/lib/demo-seed";
 import { db } from "@/lib/supabase";
 
@@ -12,14 +13,16 @@ async function guard() {
 }
 
 export async function adminLogin(_prev: AdminState, form: FormData): Promise<AdminState> {
-  if (!process.env.ADMIN_PASSWORD) return { error: "Falta ADMIN_PASSWORD en las variables de entorno." };
-  if (!checkPassword(String(form.get("password") ?? ""))) return { error: "Contraseña incorrecta." };
-  await setAdminCookie();
-  return { ok: true };
+  if (!process.env.ADMIN_PASSWORD || !process.env.SESSION_SECRET) return { error: "Acceso del equipo no disponible." };
+  const email = String(form.get("email") ?? "");
+  if (!checkTeamCredentials(email, String(form.get("password") ?? ""))) return { error: "Correo o clave incorrectos." };
+  await setAdminCookie(email);
+  redirect("/admin");
 }
 
 export async function adminLogout() {
   await clearAdminCookie();
+  redirect("/equipo");
 }
 
 export async function setTestFlag(participantId: string, isTest: boolean) {

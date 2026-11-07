@@ -5,7 +5,7 @@ import { ArrowRight, CheckCircle2, Mail } from "lucide-react";
 import { startEvaluation, submitEvaluation, submitPreference, type Variant } from "@/app/actions/evaluation";
 import { Chips, Question, YesNo } from "@/components/form-bits";
 import { FichaView, type FichaData } from "@/components/ficha-view";
-import { Button, Card, inputClass, Skeleton } from "@/components/ui";
+import { Button, ButtonLink, Card, inputClass, Skeleton } from "@/components/ui";
 import { EVALUATOR_TYPES } from "@/lib/catalog";
 
 type ColdMessage = { from: string; subject: string; body: string[] };
@@ -51,6 +51,7 @@ export function EvaluationFlow({ ficha, cold }: { ficha: FichaData; cold: ColdMe
       <CheckCircle2 className="mx-auto h-14 w-14 text-coral-300" />
       <p className="mt-4 text-3xl font-extrabold">¡Gracias por evaluar!</p>
       <p className="mt-2 text-brand-50">Tus respuestas ayudan a validar si un perfil estandarizado cambia la decisión de quien evalúa.</p>
+      <ButtonLink href="/mi-perfil/evaluador" variant="light" className="mt-6">Ver mi perfil y evaluación</ButtonLink>
     </div>
   );
 }
@@ -114,22 +115,22 @@ function ReviewForm({ onDone }: { onDone: () => void }) {
 
   return (
     <Card className="space-y-8 border-2 border-brand-600">
-      <Question title="¿Desde qué rol evalúas?">
+      <Question title="¿Desde qué rol evalúas?" hint="Elige la experiencia desde la que darás tu opinión. Si ninguna opción encaja, usa Otro. Es opcional.">
         <Chips options={EVALUATOR_TYPES} value={evaluatorType} onChange={(v) => setEvaluatorType(v as string)} />
       </Question>
-      <Question title="¿Qué tan dispuesto estarías a aceptar una primera reunión?">
+      <Question title="¿Qué tan dispuesto estarías a aceptar una primera reunión?" hint="Marca de 1 (nada dispuesto) a 5 (muy dispuesto). Se trata de conversar para conocer más; no de comprometer inversión.">
         <Scale value={meetingScore} onChange={setMeetingScore} low="Nada" high="Totalmente" />
       </Question>
-      <Question title="¿Aceptarías la reunión?">
+      <Question title="¿Aceptarías la reunión?" hint="Si hoy recibieras esta presentación, ¿dirías que sí a una primera conversación? Responde según la información que acabas de ver.">
         <YesNo value={meetingYes} onChange={setMeetingYes} />
       </Question>
-      <Question title="¿Qué tan defendible es la propuesta?" hint="¿Te convencen los argumentos y los números?">
+      <Question title="¿Qué tan defendible es la propuesta?" hint="Evalúa si lo presentado sostiene la propuesta: problema, solución y los datos disponibles. 1: poco convincente; 5: muy convincente. No necesitas hacer cálculos adicionales.">
         <Scale value={defensibility} onChange={setDefensibility} low="Nada" high="Muy defendible" />
       </Question>
-      <Question title="¿Recibirías propuestas de proyectos por esta vía?" hint="Una plataforma que te envía proyectos prefiltrados en este formato.">
+      <Question title="¿Recibirías propuestas de proyectos por esta vía?" hint="Imagina una plataforma que te envía proyectos prefiltrados con esta presentación. Indica si te interesaría recibirlos; no te inscribe a ningún envío.">
         <YesNo value={wouldReceive} onChange={setWouldReceive} />
       </Question>
-      <Question title="Comentario (opcional)">
+      <Question title="Comentario (opcional)" hint="Puedes explicar qué te convenció, qué faltó o qué información pedirías antes de reunirte.">
         <textarea className={`${inputClass} min-h-20`} maxLength={800} value={comment} onChange={(e) => setComment(e.target.value)} />
       </Question>
 
@@ -199,7 +200,7 @@ function Crossover({
       {render(tab)}
 
       <Card className="space-y-6 border-2 border-brand-600">
-        <Question title="¿Con cuál aceptarías una primera reunión?">
+        <Question title="¿Con cuál aceptarías una primera reunión?" hint="Compara el formato del mensaje y la ficha del mismo proyecto. Elige cuál te ayuda más a decidir. Si no tienes preferencia, puedes omitir la comparación.">
           <div className="grid grid-cols-2 gap-2">
             {(["A", "B"] as const).map((v) => (
               <button
@@ -216,7 +217,7 @@ function Crossover({
             ))}
           </div>
         </Question>
-        <Question title="¿Por qué? (opcional)">
+        <Question title="¿Por qué? (opcional)" hint="Explica qué diferencia te ayudó a elegir: claridad, cifras, información del equipo u otro aspecto.">
           <textarea className={`${inputClass} min-h-20`} maxLength={600} value={why} onChange={(e) => setWhy(e.target.value)} />
         </Question>
         {error && <p className="rounded-xl bg-coral-50 px-4 py-3 text-sm font-bold text-coral-700">{error}</p>}

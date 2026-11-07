@@ -21,7 +21,8 @@ export const viewport: Viewport = {
 };
 
 const NAV = [
-  { href: "/perfil", label: "Perfil" },
+  { href: "/mi-perfil", label: "Mi perfil" },
+  { href: "/perfil", label: "Proyecto" },
   { href: "/finanzas", label: "Finanzas" },
   { href: "/conexiones", label: "Conexiones" },
   { href: "/pacto", label: "Pacto" },
@@ -36,7 +37,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Link href="/" aria-label="EmprendeRed, inicio">
               <Logo />
             </Link>
-            <nav className="hidden items-center gap-1 sm:flex">
+            <nav className="hidden items-center gap-1 md:flex">
               {NAV.map((n) => (
                 <Link
                   key={n.href}
@@ -48,7 +49,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               ))}
             </nav>
           </div>
-          <nav className="flex gap-1 overflow-x-auto px-3 pb-2 sm:hidden">
+          <nav className="flex gap-1 overflow-x-auto px-3 pb-2 md:hidden">
             {NAV.map((n) => (
               <Link
                 key={n.href}

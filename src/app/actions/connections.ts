@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import { WTP_RANGES } from "@/lib/catalog";
 import { loadMatches } from "@/lib/connections";
 import { requireParticipant } from "@/lib/session";
@@ -43,6 +45,7 @@ export async function rateSuggestion(networkProfileId: string, rating: number) {
     ({ error, count } = await update());
   }
   if (error || !count) return { error: "No pudimos guardar la calificación." };
+  revalidatePath("/mi-perfil/emprendedor");
   return { ok: true };
 }
 
@@ -54,5 +57,6 @@ export async function submitPlatformFeedback(input: { wouldUse: boolean; wtp: st
     .upsert({ participant_id: p.id, would_use: Boolean(input.wouldUse), wtp_monthly: wtp, comment: input.comment.trim().slice(0, 600) || null });
   if (error) return { error: "No pudimos guardar tu respuesta." };
   await db().from("events").insert({ participant_id: p.id, module: "conexiones", type: "complete" });
+  revalidatePath("/mi-perfil/emprendedor");
   return { ok: true };
 }

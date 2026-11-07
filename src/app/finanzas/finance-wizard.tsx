@@ -7,39 +7,38 @@ import { completeFinance, saveFinanceStep, startFinance } from "@/app/actions/fi
 import { CashChart } from "@/components/cash-chart";
 import { SERIES_COLORS } from "@/lib/chart-colors";
 import { Question, Stepper, YesNo } from "@/components/form-bits";
-import { Button, Card, inputClass } from "@/components/ui";
+import { Button, ButtonLink, Card, inputClass } from "@/components/ui";
 import { computeFinance, IRR_STATUS_TEXT, type FinanceInputs, type FinanceResults } from "@/lib/finance";
 import { formatCLP, formatCLPShort, formatDuration, formatNumber, formatPct } from "@/lib/format";
+import { FINANCE_GUIDE } from "@/lib/finance-guide";
 import { track } from "@/lib/track";
 
 const STEPS = ["Inversión", "Ventas", "Costos", "Impuestos y tasa", "Escenarios", "Resultados"];
 
 type Key = keyof FinanceInputs;
-type FieldDef = { key: Key; label: string; kind: "clp" | "pct" | "num" | "days"; help: string; suffix?: string };
+type FieldDef = { key: Key; label: string; kind: "clp" | "pct" | "num" | "days"; suffix?: string };
 
-// Ayudas cortas. Cuando corresponde, citan lo que dijeron los entrevistados del Hito 1.
+// Las explicaciones y ejemplos están en finance-guide.ts.
 const FIELDS: Record<number, FieldDef[]> = {
   0: [
     {
       key: "investment",
       label: "Inversión inicial",
       kind: "clp",
-      help: "Todo lo que gastas antes de vender: equipos, desarrollo, permisos, stock inicial. En Chile la mediana que requiere un emprendimiento es $4 millones (GEM 2025).",
     },
   ],
   1: [
-    { key: "price", label: "Precio por unidad", kind: "clp", help: "Lo que te paga un cliente por cada unidad (producto, servicio o mes de suscripción), sin IVA." },
+    { key: "price", label: "Precio por unidad", kind: "clp" },
     {
       key: "units",
       label: "Unidades vendidas el primer mes",
       kind: "num",
-      help: "Sé conservador. Los evaluadores desconfían de las proyecciones sobre-optimistas sin un caso base honesto (Anexo 12).",
     },
-    { key: "growth", label: "Crecimiento mensual de ventas", kind: "pct", suffix: "% al mes", help: "Cuánto crecen tus unidades cada mes. 3 % al mes ≈ 43 % al año." },
+    { key: "growth", label: "Crecimiento mensual de ventas", kind: "pct", suffix: "% al mes" },
   ],
   2: [
-    { key: "variableCost", label: "Costo variable por unidad", kind: "clp", help: "Lo que cuesta producir y entregar cada unidad: materiales, envío, comisiones." },
-    { key: "fixedCosts", label: "Costos fijos mensuales", kind: "clp", help: "Lo que pagas cada mes vendas o no: arriendo, sueldos, software, contador." },
+    { key: "variableCost", label: "Costo variable por unidad", kind: "clp" },
+    { key: "fixedCosts", label: "Costos fijos mensuales", kind: "clp" },
   ],
   3: [
     {
@@ -47,14 +46,12 @@ const FIELDS: Record<number, FieldDef[]> = {
       label: "Impuesto sobre las utilidades",
       kind: "pct",
       suffix: "%",
-      help: "Muchos presupuestos olvidan los impuestos (Anexo 6). Usa la tasa de tu régimen tributario (SII). Si pones 0 verás el caso sin impuestos.",
     },
     {
       key: "discountRate",
       label: "Tasa de descuento anual",
       kind: "pct",
       suffix: "% al año",
-      help: "Lo mínimo que te exiges ganar al año por tu dinero y el riesgo. Se usa para el VAN. Por defecto, 12 %.",
     },
   ],
   4: [
@@ -63,15 +60,13 @@ const FIELDS: Record<number, FieldDef[]> = {
       label: "Escenario pesimista: ventas",
       kind: "pct",
       suffix: "%",
-      help: "Los inversionistas piden ver los números en escenario optimista, realista y pesimista (Anexo 16).",
     },
-    { key: "optimistic", label: "Escenario optimista: ventas", kind: "pct", suffix: "%", help: "Cuánto más venderías si todo sale bien." },
+    { key: "optimistic", label: "Escenario optimista: ventas", kind: "pct", suffix: "%" },
     {
       key: "paymentDelayDays",
       label: "Contingencia: atraso en pagos",
       kind: "days",
       suffix: "días",
-      help: "Puedes vender y aun así quedarte sin caja si te pagan tarde. Un error frecuente es no tener plan para el retraso en el pago de facturas (Anexo 5).",
     },
   ],
 };
@@ -81,7 +76,7 @@ const toForm = (inp: FinanceInputs): Record<Key, string> =>
     (Object.keys(inp) as Key[]).map((k) => {
       const def = Object.values(FIELDS).flat().find((f) => f.key === k);
       const v = inp[k];
-      if (def?.kind === "pct") return [k, String(Math.round(v * 1000) / 10)];
+      if (def?.kind === "pct") return [k, String(Math.round(v * 1000) / 10).replace(".", ",")];
       // Montos y unidades en 0 se muestran vacíos para que el usuario los complete.
       if ((def?.kind === "clp" || def?.kind === "num") && v === 0) return [k, ""];
       return [k, String(v)];
@@ -165,6 +160,7 @@ export function FinanceWizard({ initial, completed, durationS, lastStep, profile
   return (
     <Card>
       <Stepper steps={STEPS} current={step} />
+      {step < 5 && <p className="mb-6 rounded-xl bg-paper p-4 text-sm leading-relaxed text-muted">Usa pesos chilenos sin IVA y mantén la misma unidad en toda la plantilla. Para decimales, escribe coma (por ejemplo, 2,5). Los ejemplos son ilustrativos: reemplázalos por tus estimaciones. Guardamos al avanzar.</p>}
 
       {step < 5 && (
         <div className="space-y-6">
@@ -180,10 +176,11 @@ export function FinanceWizard({ initial, completed, durationS, lastStep, profile
                   aria-expanded={openHelp === f.key}
                   className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-bold text-brand-700 hover:bg-brand-50"
                 >
-                  <CircleHelp className="h-4 w-4" /> ¿Qué es?
+                  <CircleHelp className="h-4 w-4" /> Ver ejemplo
                 </button>
               </div>
-              {openHelp === f.key && <p className="mb-2 rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-900">{f.help}</p>}
+              <p id={`${f.key}-help`} className="mb-3 text-sm leading-relaxed text-muted">{FINANCE_GUIDE[f.key].explanation}</p>
+              {openHelp === f.key && <p className="mb-3 rounded-xl bg-brand-50 px-4 py-3 text-sm leading-relaxed text-brand-900">{FINANCE_GUIDE[f.key].example}</p>}
               <NumberInput
                 id={f.key}
                 def={f}
@@ -247,6 +244,7 @@ function NumberInput({ id, def, value, onChange }: { id: string; def: FieldDef; 
       {isMoney && <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-muted">$</span>}
       <input
         id={id}
+        aria-describedby={`${id}-help`}
         inputMode={def.kind === "pct" ? "decimal" : "numeric"}
         className={`${inputClass} tabular text-xl font-bold ${isMoney ? "pl-9" : ""} ${def.suffix ? "pr-28" : ""}`}
         value={display}
@@ -287,6 +285,7 @@ function Results({ results, inputs }: { results: FinanceResults; inputs: Finance
 
   return (
     <div className="space-y-6">
+      <div className="rounded-xl bg-paper p-5 text-sm leading-relaxed text-muted"><h3 className="mb-3 font-extrabold text-ink">Cómo leer tus resultados</h3><ul className="list-disc space-y-2 pl-5"><li><b>VAN:</b> valor que aporta el proyecto después de recuperar la inversión y exigir la tasa que elegiste. Si es negativo, no alcanza esa exigencia en 36 meses.</li><li><b>TIR:</b> rentabilidad anual implícita de los flujos. Compárala con tu tasa de descuento; puede no tener solución.</li><li><b>Punto de equilibrio:</b> ventas necesarias para cubrir los costos operativos. No significa haber recuperado la inversión inicial.</li><li><b>Recuperación:</b> mes desde el que la caja acumulada se mantiene en cero o más dentro de la proyección.</li><li><b>Escenarios:</b> optimista y pesimista cambian cuánto vendes; contingencia mantiene las ventas base y retrasa el cobro.</li></ul><p className="mt-3">Son proyecciones según tus supuestos, no resultados garantizados. Los cobros posteriores al mes 36 quedan fuera del horizonte del modelo.</p></div>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi label="VAN (3 años)" value={formatCLPShort(base.npv)} tone={npvPositive ? "good" : "bad"} note={npvPositive ? "Crea valor" : "No cubre la tasa exigida"} />
         <Kpi
@@ -390,16 +389,17 @@ function Kpi({ label, value, note, tone }: { label: string; value: string; note:
 function DoneLinks({ duration, profileId }: { duration: number; profileId: string | null }) {
   return (
     <div className="space-y-3">
+      <ButtonLink href="/mi-perfil/emprendedor" className="w-full">Ver mi perfil y resumen financiero</ButtonLink>
       <p className="flex items-center justify-center gap-2 rounded-2xl bg-brand-50 p-4 font-bold text-brand-800">
         <Timer className="h-5 w-5" /> ¡Números listos! {duration > 0 && <>Te tomó {formatDuration(duration)} min.</>}
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         {profileId ? (
-          <Link href={`/ficha/${profileId}`} className="rounded-card border-2 border-coral-500 bg-white p-5 transition hover:bg-coral-50">
-            <FileCheck2 className="h-7 w-7 text-coral-500" />
-            <p className="mt-2 text-lg font-extrabold">Ficha privada del equipo</p>
-            <p className="text-sm text-muted">Perfil e indicadores. Acceso con contraseña de administrador.</p>
-          </Link>
+          <div className="rounded-card border border-line bg-white p-5">
+            <FileCheck2 className="h-7 w-7 text-brand-600" />
+            <p className="mt-2 text-lg font-extrabold">Datos guardados</p>
+            <p className="text-sm text-muted">Tus datos serán revisados por el equipo del proyecto.</p>
+          </div>
         ) : (
           <Link href="/perfil" className="rounded-card border-2 border-coral-500 bg-white p-5 transition hover:bg-coral-50">
             <FileCheck2 className="h-7 w-7 text-coral-500" />

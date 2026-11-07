@@ -5,37 +5,40 @@ import { db } from "./supabase";
 
 const COOKIE = "er_admin";
 
-// El token depende de la contraseña: si se cambia ADMIN_PASSWORD, las sesiones viejas dejan de valer.
-function token(): string | null {
-  const secret = process.env.SESSION_SECRET;
-  const pass = adminPassword();
-  if (!secret || !pass) return null;
-  return createHmac("sha256", secret).update(`admin:${pass}`).digest("base64url");
-}
-
+// Lista cerrada del equipo. No se usa el correo declarado por participantes.
+const TEAM_EMAILS = new Set(["sarnolds@miuandes.cl", "admin@example.cl"]);
+const MAX_AGE = 60 * 60 * 12;
+const normalizeEmail = (email: string) => email.trim().toLowerCase();
+const adminPassword = () => process.env.ADMIN_PASSWORD?.trim() ?? "";
 const safeEqual = (a: string, b: string) => {
   const x = Buffer.from(a);
   const y = Buffer.from(b);
   return x.length === y.length && timingSafeEqual(x, y);
 };
 
-// Se ignoran espacios y saltos de línea en los extremos: al copiar/pegar la variable en Vercel
-// es fácil que quede un "\n" al final y la contraseña se vuelva imposible de escribir.
-const adminPassword = () => process.env.ADMIN_PASSWORD?.trim() ?? "";
-
-export function checkPassword(input: string): boolean {
+function signature(payload: string): string | null {
+  const secret = process.env.SESSION_SECRET;
   const pass = adminPassword();
-  return pass.length > 0 && safeEqual(input.trim(), pass);
+  if (!secret || !pass) return null;
+  return createHmac("sha256", secret).update(JSON.stringify(["team-v1", pass, payload])).digest("base64url");
 }
 
-export async function setAdminCookie() {
-  const t = token();
-  if (!t) return;
-  (await cookies()).set(COOKIE, t, {
+export function checkTeamCredentials(email: string, password: string): boolean {
+  const pass = adminPassword();
+  return TEAM_EMAILS.has(normalizeEmail(email)) && pass.length > 0 && safeEqual(password.trim(), pass);
+}
+
+export async function setAdminCookie(email: string) {
+  const normalized = normalizeEmail(email);
+  if (!TEAM_EMAILS.has(normalized)) throw new Error("No autorizado");
+  const payload = Buffer.from(JSON.stringify({ email: normalized, expires: Date.now() + MAX_AGE * 1000 })).toString("base64url");
+  const sig = signature(payload);
+  if (!sig) throw new Error("Acceso del equipo sin configurar");
+  (await cookies()).set(COOKIE, `${payload}.${sig}`, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
-    maxAge: 60 * 60 * 12,
+    maxAge: MAX_AGE,
     path: "/",
   });
 }
@@ -45,9 +48,20 @@ export async function clearAdminCookie() {
 }
 
 export async function isAdmin(): Promise<boolean> {
-  const t = token();
-  const v = (await cookies()).get(COOKIE)?.value;
-  return Boolean(t && v && safeEqual(v, t));
+  const raw = (await cookies()).get(COOKIE)?.value;
+  if (!raw) return false;
+  const parts = raw.split(".");
+  if (parts.length !== 2) return false;
+  const [payload, sig] = parts;
+  const expected = signature(payload);
+  if (!expected || !safeEqual(sig, expected)) return false;
+  try {
+    const session = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    return typeof session.email === "string" && TEAM_EMAILS.has(session.email)
+      && typeof session.expires === "number" && session.expires > Date.now();
+  } catch {
+    return false;
+  }
 }
 
 /** Lee todas las filas de una tabla en páginas de 1000 (límite por defecto de Supabase). */

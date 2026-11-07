@@ -5,7 +5,7 @@ import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, Printer, ScrollText
 import { completePact, savePactStep, startPact } from "@/app/actions/pact";
 import { Chips, Question, Stepper, YesNo } from "@/components/form-bits";
 import { LogoMark } from "@/components/logo";
-import { Button, Card, Field, inputClass } from "@/components/ui";
+import { Button, ButtonLink, Card, Field, inputClass } from "@/components/ui";
 import { formatCLP, formatNumber } from "@/lib/format";
 import { DECISION_RULES, equityWarning, LEAVE_RULES, PACT_ROLES, type PactData, type Partner } from "@/lib/pact";
 import { track } from "@/lib/track";
@@ -77,7 +77,7 @@ export function PactWizard({ initial, completed, lastStep }: { initial: PactData
       <div className="space-y-8">
         {step === 0 && (
           <>
-            <Field label="Nombre del proyecto">
+            <Field label="Nombre del proyecto" hint="Usen el nombre del negocio al que se aplicará este acuerdo.">
               <input className={inputClass} value={d.projectName} maxLength={80} onChange={(e) => setD({ ...d, projectName: e.target.value })} />
             </Field>
             {([0, 1] as const).map((i) => (
@@ -85,7 +85,7 @@ export function PactWizard({ initial, completed, lastStep }: { initial: PactData
                 <Field label={`Socio ${i + 1}: nombre`}>
                   <input className={inputClass} value={d.partners[i].name} maxLength={80} onChange={(e) => setPartner(i, { name: e.target.value })} />
                 </Field>
-                <Question title="Rol principal">
+                <Question title="Rol principal" hint="Responsabilidad principal de esta persona en el proyecto. Elijan lo que realmente hará; no define su porcentaje de propiedad.">
                   <Chips options={PACT_ROLES} value={d.partners[i].role || null} onChange={(v) => setPartner(i, { role: v as Partner["role"] })} />
                 </Question>
               </div>
@@ -97,7 +97,7 @@ export function PactWizard({ initial, completed, lastStep }: { initial: PactData
           ([0, 1] as const).map((i) => (
             <div key={i} className="space-y-3 rounded-2xl bg-paper p-4">
               <p className="text-lg font-extrabold">{nameOf(i)}</p>
-              <Field label="Capital que aporta">
+              <Field label="Capital que aporta" hint="Dinero que esta persona se compromete a aportar al inicio, en pesos chilenos. Escribe 0 si su aporte no será monetario.">
                 <div className="relative">
                   <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-bold text-muted">$</span>
                   <input
@@ -109,7 +109,7 @@ export function PactWizard({ initial, completed, lastStep }: { initial: PactData
                   />
                 </div>
               </Field>
-              <Field label="Qué más aporta" hint="Trabajo, conocimiento, contactos, equipos, una marca…">
+              <Field label="Qué más aporta" hint="Describe aportes distintos del dinero. Ejemplo: desarrollar el sitio, aportar un equipo o encargarse de las ventas. Sean concretos.">
                 <textarea
                   className={`${inputClass} min-h-20`}
                   maxLength={300}
@@ -122,12 +122,12 @@ export function PactWizard({ initial, completed, lastStep }: { initial: PactData
 
         {step === 2 && (
           <>
-            <Question title="¿Qué % de su tiempo dedica cada uno?" hint="Un equipo se cayó porque no todos podían dedicar el 100 % (Anexo 11). Mejor decirlo ahora.">
+            <Question title="¿Qué % de su tiempo dedica cada uno?" hint="Acuerden cuánto tiempo de trabajo puede dedicar cada persona al proyecto: 100 % es jornada completa; 50 % es media jornada. No es el porcentaje de propiedad.">
               {([0, 1] as const).map((i) => (
                 <Slider key={i} label={nameOf(i)} value={d.partners[i].dedication} onChange={(v) => setPartner(i, { dedication: v })} suffix="%" />
               ))}
             </Question>
-            <Question title="¿Cómo se reparte la participación?">
+            <Question title="¿Cómo se reparte la participación?" hint="Participación es el porcentaje de propiedad del negocio. Los dos socios y la reserva deben sumar 100 %. La reserva se guarda para futuros integrantes; puede ser 0.">
               <Slider
                 label={`Reserva para futuros socios o equipo`}
                 value={d.pool}
@@ -156,12 +156,12 @@ export function PactWizard({ initial, completed, lastStep }: { initial: PactData
           <>
             <Question
               title="Vesting: ¿en cuántos años se gana la participación?"
-              hint="Cada socio va ganando sus acciones con el tiempo. Así, si alguien se va pronto, no se lleva todo. Lo típico: 4 años (Anexo 12)."
+              hint="Vesting significa ganar gradualmente la participación acordada. El cliff es el mínimo de meses antes de ganar una parte. Ejemplo: vesting de 4 años y cliff de 12 meses. Ajusten ambos a lo que acuerden."
             >
               <Slider label="Años de vesting" value={d.vestingYears} max={6} onChange={(v) => setD({ ...d, vestingYears: v })} suffix="años" />
               <Slider label="Cliff: tiempo mínimo antes de ganar algo" value={d.cliffMonths} max={24} onChange={(v) => setD({ ...d, cliffMonths: v })} suffix="meses" />
             </Question>
-            <Question title="¿Cómo toman decisiones?">
+            <Question title="¿Cómo toman decisiones?" hint="Unanimidad: ambos deben estar de acuerdo. Mayoría: decide quien reúna más votos según el reparto. Por roles: cada socio decide en su área y ambos acuerdan las decisiones grandes.">
               <div className="space-y-2">
                 {Object.entries(DECISION_RULES).map(([k, v]) => (
                   <button
@@ -181,7 +181,7 @@ export function PactWizard({ initial, completed, lastStep }: { initial: PactData
 
         {step === 4 && (
           <>
-            <Question title="Si un socio se va, ¿qué pasa?" hint="Elige todas las que acuerden.">
+            <Question title="Si un socio se va, ¿qué pasa?" hint="Elijan las reglas que ambos acepten. Participación no consolidada es la que todavía no se gana por vesting. Compra preferente da al otro socio la primera opción de comprar.">
               <div className="space-y-2">
                 {Object.entries(LEAVE_RULES).map(([k, v]) => {
                   const on = d.leaveRules.includes(k as keyof typeof LEAVE_RULES);
@@ -204,6 +204,7 @@ export function PactWizard({ initial, completed, lastStep }: { initial: PactData
                 })}
               </div>
             </Question>
+            <p className="text-sm text-muted">Elijan cada cuántos meses volverán a conversar sobre este acuerdo. Por ejemplo, 6 significa revisarlo dos veces al año.</p>
             <Slider label="Revisamos este pacto cada" value={d.reviewMonths} max={24} onChange={(v) => setD({ ...d, reviewMonths: Math.max(1, v) })} suffix="meses" />
           </>
         )}
@@ -213,7 +214,7 @@ export function PactWizard({ initial, completed, lastStep }: { initial: PactData
             <PactDocument d={d} />
             {!done ? (
               <div className="no-print">
-                <Question title="¿Lo usarías con tu socio real?">
+                <Question title="¿Lo usarías con tu socio real?" hint="Indica si esta guía te serviría para conversar y acordar reglas con tu socio. Responder Sí no firma el documento ni lo envía a otra persona.">
                   <YesNo value={wouldUse} onChange={setWouldUse} />
                 </Question>
               </div>
@@ -249,7 +250,8 @@ export function PactWizard({ initial, completed, lastStep }: { initial: PactData
         </div>
       )}
       {done && (
-        <div className="no-print mt-6 text-center">
+        <div className="no-print mt-6 flex flex-wrap justify-center gap-3">
+          <ButtonLink href="/mi-perfil/emprendedor">Ver mi perfil completo</ButtonLink>
           <Button variant="ghost" type="button" onClick={() => (setDone(false), setStep(0))}>
             Editar pacto
           </Button>

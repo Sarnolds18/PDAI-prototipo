@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import Link from "next/link";
+import { notFound } from "next/navigation";
 import { connection } from "next/server";
-import { CheckCircle2, Download, Hourglass, Lock, Users, XCircle } from "lucide-react";
+import { CheckCircle2, Download, Hourglass, Users, XCircle } from "lucide-react";
 import { Badge, Card, Skeleton } from "@/components/ui";
 import { isAdmin } from "@/lib/admin";
 import { loadAdminData, type AdminData, type AdminView } from "@/lib/admin-data";
@@ -9,7 +11,7 @@ import { AGE_RANGES, EVALUATOR_TYPES, INDUSTRIES, label, OBSTACLES, STAGES, WTP_
 import { formatDuration, formatPct } from "@/lib/format";
 import type { Criterion, HypothesisResult, Status } from "@/lib/hypotheses";
 import { isDbConfigured, missingEnv } from "@/lib/supabase";
-import { DeleteIteration, DemoControls, IterationForm, LoginForm, LogoutButton, SettingsForm, TestToggle } from "./forms";
+import { DeleteIteration, DemoControls, IterationForm, LogoutButton, SettingsForm, TestToggle } from "./forms";
 
 export const metadata: Metadata = { title: "Resultados de validación", robots: { index: false } };
 
@@ -26,16 +28,8 @@ export default function AdminPage({ searchParams }: PageProps<"/admin">) {
 async function AdminGate({ searchParams }: { searchParams: PageProps<"/admin">["searchParams"] }) {
   await connection();
   const view: AdminView = (await searchParams).vista === "demo" ? "demo" : "real";
+  if (!(await isAdmin())) notFound();
   if (!isDbConfigured()) return <Card className="bg-sun-100">Faltan variables de entorno: {missingEnv().join(", ")}.</Card>;
-  if (!(await isAdmin())) {
-    return (
-      <Card className="py-10">
-        <Lock className="mx-auto h-10 w-10 text-brand-600" />
-        <p className="mb-6 mt-2 text-center text-xl font-extrabold">Dashboard de validación</p>
-        <LoginForm />
-      </Card>
-    );
-  }
   const data = await loadAdminData(view);
   return <Dashboard d={data} />;
 }
@@ -432,7 +426,7 @@ function Distribution({ title, rows, map }: { title: string; rows: [string, numb
 function ParticipantsTable({ d }: { d: AdminData }) {
   const done = (rows: Record<string, unknown>[], key = "completed") =>
     new Set(rows.filter((r) => r[key]).map((r) => r.participant_id as string));
-  const perfil = done(d.raw.profiles);
+  const profileIds = new Map(d.raw.profiles.map((profile) => [profile.participant_id, String(profile.id)]));
   const fin = done(d.raw.finance);
   const fb = new Set(d.raw.feedback.map((r) => r.participant_id as string));
   const ev = done(d.raw.evaluations, "answered_at");
@@ -463,7 +457,11 @@ function ParticipantsTable({ d }: { d: AdminData }) {
               <td className="px-4 py-2">{p.name}</td>
               <td className="px-4 py-2">{p.role}</td>
               <td className="px-4 py-2 text-xs">{new Date(p.created_at).toLocaleDateString("es-CL")}</td>
-              <td className="px-4 py-2 text-center">{mark(perfil.has(p.id))}</td>
+              <td className="px-4 py-2 text-center">
+                {profileIds.has(p.id) ? (
+                  <Link className="font-bold text-brand-700 underline" href={`/ficha/${profileIds.get(p.id)}`}>Ver ficha</Link>
+                ) : "·"}
+              </td>
               <td className="px-4 py-2 text-center">{mark(fin.has(p.id))}</td>
               <td className="px-4 py-2 text-center">{mark(fb.has(p.id))}</td>
               <td className="px-4 py-2 text-center">{mark(pacto.has(p.id))}</td>

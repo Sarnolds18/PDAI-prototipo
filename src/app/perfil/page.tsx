@@ -7,7 +7,7 @@ import { db } from "@/lib/supabase";
 import type { ProfileData, ProfileRow } from "@/lib/types";
 import { ProfileWizard } from "./profile-wizard";
 
-export const metadata: Metadata = { title: "Perfil validado" };
+export const metadata: Metadata = { title: "Mi perfil de proyecto" };
 
 const EMPTY: ProfileData = {
   age_range: null,
@@ -26,9 +26,9 @@ const EMPTY: ProfileData = {
 
 export default function PerfilPage() {
   return (
-    <section className="mx-auto max-w-3xl px-4 py-8 sm:py-12">
-      <PageHeader eyebrow="Paso 1 · Perfil validado" title="Muestra lo que sabes hacer">
-        Tus competencias con evidencia y tu proyecto en formato estándar.
+    <section className="mx-auto max-w-5xl px-4 py-8 sm:py-12">
+      <PageHeader eyebrow="Paso 1 · Tu perfil" title="Empecemos por tu proyecto">
+        Cuéntanos qué estás construyendo, qué sabes hacer y qué necesitas para avanzar.
       </PageHeader>
       <Suspense fallback={<Skeleton className="h-96" />}>
         <ParticipantGate

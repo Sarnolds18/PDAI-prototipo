@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { Briefcase, ChevronDown, GraduationCap, HandCoins, MapPin, Send, Star, Users } from "lucide-react";
 import { rateSuggestion, recordSuggestions, submitPlatformFeedback } from "@/app/actions/connections";
 import { Chips, YesNo } from "@/components/form-bits";
-import { Badge, Button, Card, inputClass } from "@/components/ui";
+import { Badge, Button, ButtonLink, Card, inputClass } from "@/components/ui";
 import { NETWORK_KINDS, WTP_RANGES, type NetworkKind } from "@/lib/catalog";
 import type { Match } from "@/lib/matching";
 
@@ -38,7 +38,7 @@ export function ConnectionsBoard({ matches, order, initialRatings, feedbackDone 
     <div className="space-y-10">
       <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-sand px-4 py-3 text-sm">
         <Star className="h-5 w-5 text-coral-500" />
-        <span className="font-bold">Califica cada sugerencia de 1 a 5: ¿te serviría conocer a esta persona?</span>
+        <span className="font-bold">Califica qué tanto te serviría conocer a esta persona: 1 = poco útil, 5 = muy útil. La afinidad es una comparación por reglas con tu perfil, no una garantía ni una conexión confirmada.</span>
         <span className="tabular ml-auto font-extrabold text-brand-700">
           {rated}/{total}
         </span>
@@ -66,6 +66,7 @@ export function ConnectionsBoard({ matches, order, initialRatings, feedbackDone 
       })}
 
       <FeedbackPanel done={feedbackDone} />
+      <div className="flex flex-wrap justify-center gap-3"><ButtonLink href="/mi-perfil/emprendedor">Ver mi perfil completo</ButtonLink><ButtonLink href="/pacto" variant="ghost">Preparar pacto de socios (opcional)</ButtonLink></div>
     </div>
   );
 }
@@ -184,6 +185,7 @@ function FeedbackPanel({ done }: { done: boolean }) {
   return (
     <Card className="border-2 border-brand-600">
       <p className="text-2xl font-extrabold">¿Usarías EmprendeRed para encontrar socios, mentores o inversión?</p>
+      <p className="mt-2 text-sm text-muted">Responde si una plataforma con estas sugerencias te ayudaría a encontrar apoyo. No se envía ninguna solicitud de contacto.</p>
       <div className="mt-4 max-w-sm">
         <YesNo value={wouldUse} onChange={setWouldUse} />
       </div>
@@ -192,6 +194,7 @@ function FeedbackPanel({ done }: { done: boolean }) {
         <p className="font-extrabold">
           ¿Cuánto pagarías al mes? <span className="text-sm font-bold text-muted">(opcional)</span>
         </p>
+        <p className="text-sm text-muted">Elige un monto mensual en pesos chilenos que pagarías por usar la plataforma. Es una opinión para el estudio: no se hará ningún cobro.</p>
         <Chips options={WTP_RANGES} value={wtp} onChange={(v) => setWtp(v as string)} />
       </div>
 
@@ -199,7 +202,8 @@ function FeedbackPanel({ done }: { done: boolean }) {
         <p className="mb-2 font-extrabold">
           ¿Algo que mejorarías? <span className="text-sm font-bold text-muted">(opcional)</span>
         </p>
-        <textarea className={`${inputClass} min-h-20`} maxLength={600} value={comment} onChange={(e) => setComment(e.target.value)} />
+        <p className="mb-2 text-sm text-muted">Por ejemplo, una conexión que falta, una sugerencia poco pertinente o algo que te costó entender.</p>
+        <textarea aria-label="Sugerencias para mejorar la plataforma" className={`${inputClass} min-h-20`} maxLength={600} value={comment} onChange={(e) => setComment(e.target.value)} />
       </div>
 
       {error && <p className="mt-4 rounded-xl bg-coral-50 px-4 py-3 text-sm font-bold text-coral-700">{error}</p>}

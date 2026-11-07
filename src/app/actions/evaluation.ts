@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import { randomInt } from "node:crypto";
 import { EVALUATOR_TYPES } from "@/lib/catalog";
 import { requireParticipant } from "@/lib/session";
@@ -66,6 +68,7 @@ export async function submitEvaluation(input: {
     .is("answered_at", null); // la primera respuesta (sin haber visto la otra versión) no se sobrescribe
   if (error) return { error: "No pudimos guardar. Intenta de nuevo." };
   await db().from("events").insert({ participant_id: p.id, module: "evaluar", type: "step_done", step: 1 });
+  revalidatePath("/mi-perfil/evaluador");
   return { ok: true };
 }
 
@@ -85,5 +88,6 @@ export async function submitPreference(input: { preferred: Variant | null; why: 
     .not("answered_at", "is", null);
   if (error) return { error: "No pudimos guardar. Intenta de nuevo." };
   await db().from("events").insert({ participant_id: p.id, module: "evaluar", type: "complete", payload: { skipped: input.skipped } });
+  revalidatePath("/mi-perfil/evaluador");
   return { ok: true };
 }

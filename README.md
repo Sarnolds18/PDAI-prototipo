@@ -12,13 +12,17 @@ Prototipo del Grupo 4 · Pensamiento de Diseño Aplicado a la Ingeniería · UAN
 | Ruta | Para quién | Qué hace | Hipótesis |
 |---|---|---|---|
 | `/` | Todos | Propuesta de valor y acceso | — |
+| `/mi-perfil` | Participantes | Acceso al resumen propio según rol | — |
+| `/mi-perfil/emprendedor` | Emprendedor | Proyecto, finanzas, conexiones destacadas y pacto propios | — |
+| `/mi-perfil/evaluador` | Evaluador | Respuestas y preferencia de su evaluación del ejemplo | — |
 | `/perfil` | Emprendedores | Perfil validado: competencias con evidencia y descripción estandarizada. Mide tiempo y autonomía | H6 |
 | `/finanzas` | Emprendedores | Plantilla guiada: flujo de caja, VAN, TIR, equilibrio y escenarios | H3 |
 | `/ficha/[id]` | Equipo administrador | Ficha privada imprimible / PDF (requiere sesión de admin) | — |
 | `/conexiones` | Emprendedores | Top 3 socios, mentores e inversionistas con motivo del match; calificación 1–5 | H1 |
 | `/pacto` | Emprendedores con socio | Pacto de socios guiado y documento resumen | H4 |
 | `/evaluar` | Evaluadores | Test A/B: contacto en frío vs ficha estandarizada | H2, H3, H5 |
-| `/admin` | Equipo | Dashboard de resultados y exportación CSV (con contraseña) | todas |
+| `/equipo` | Equipo | Ingreso con correo autorizado y clave compartida | — |
+| `/admin` | Equipo | Dashboard de resultados y exportación CSV (requiere sesión; sin sesión muestra página no encontrada) | todas |
 
 ## Correrlo localmente
 
@@ -61,7 +65,7 @@ Reemplaza `TU-DOMINIO` por la URL de Vercel (ej. `emprendered.vercel.app`).
 | Mentores, inversionistas, evaluadores | `https://TU-DOMINIO/evaluar` | «Evalúa un proyecto en 3 minutos.» |
 | Demo del pitch | `https://TU-DOMINIO/perfil?demo=1` | Las sesiones con `?demo=1` quedan marcadas como prueba y **no cuentan** para la validación. |
 
-Recorrido completo del emprendedor: `/perfil` → `/finanzas` → ficha → `/conexiones` → (opcional) `/pacto`. Cada participante recibe un código `ER-XXXX` para retomar desde cualquier dispositivo.
+Recorrido completo del emprendedor: `/perfil` → `/finanzas` → `/conexiones` → (opcional) `/pacto`. Cada participante recibe un código `ER-XXXX` para retomar desde cualquier dispositivo.
 
 ### Protocolo para que los datos sirvan
 
@@ -127,6 +131,15 @@ src/
 supabase/         schema.sql y seed.sql
 ```
 
-**Seguridad:** todas las tablas tienen RLS sin políticas públicas, y solo el servidor accede con la service role key. Las sesiones usan cookies firmadas. Las fichas reales requieren una sesión de administrador, con la contraseña configurada en `ADMIN_PASSWORD`; el equipo autorizado usa ese acceso. Sin esa sesión, `/ficha/[id]` redirige a `/admin` antes de consultar datos. Los evaluadores en `/evaluar` siguen viendo exclusivamente el proyecto ficticio. Los participantes conservan el acceso a sus propios formularios mediante su código.
+**Seguridad:** todas las tablas tienen RLS sin políticas públicas, y solo el servidor accede con la service role key. Las sesiones usan cookies firmadas. Las fichas reales requieren una sesión de administrador, con correo autorizado (`sarnolds@miuandes.cl` o `admin@example.cl`) y la clave compartida configurada en `ADMIN_PASSWORD`. El ingreso está en `/equipo`, sin enlaces en las pantallas de participantes. Sin sesión, `/admin` y `/ficha/[id]` muestran página no encontrada antes de consultar datos. El correo es un filtro junto a la clave compartida, no una verificación de la propiedad del buzón. Las sesiones caducan a las 12 horas; las cookies antiguas de contraseña dejan de valer. Las fichas se abren desde la tabla de participantes del panel. Los evaluadores en `/evaluar` siguen viendo exclusivamente el proyecto ficticio. Los participantes conservan el acceso a sus propios formularios mediante su código.
 
 **Stack:** Next.js 16 (App Router), TypeScript, Tailwind CSS 4, Supabase (Postgres), Recharts y Vercel.
+
+
+## Resúmenes personales
+
+La navegación «Mi perfil» abre el resumen del rol con sesión activa. Si una persona tiene ambos roles, elige cuál consultar. Los resúmenes requieren la sesión correspondiente y filtran por su participante; no aceptan un ID de otra persona. Los formularios siguen en sus rutas habituales y enlazan al resumen al terminar. Los evaluadores continúan usando solo el caso ficticio.
+
+El resumen del emprendedor destaca los resultados financieros guardados al finalizar la plantilla, una conexión por tipo (primero por calificación propia y luego por afinidad), y el pacto completado. Los módulos pendientes muestran cómo continuarlos; el pacto es opcional. Las sugerencias de demostración se identifican como tales. Guardar un pacto no significa firmarlo.
+
+Los campos financieros incluyen explicaciones visibles y ejemplos desplegables. Los ejemplos no se guardan como respuestas. Las preguntas del perfil, pacto, evaluación y conexiones incluyen ayudas sobre qué responder.

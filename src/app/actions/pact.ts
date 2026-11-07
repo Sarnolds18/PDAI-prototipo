@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import { DECISION_RULES, DEFAULT_PACT, LEAVE_RULES, PACT_ROLES, type PactData, type Partner } from "@/lib/pact";
 import { requireParticipant } from "@/lib/session";
 import { db } from "@/lib/supabase";
@@ -48,6 +50,7 @@ export async function savePactStep(step: number, data: Partial<PactData>) {
     .eq("participant_id", p.id);
   if (error) return { error: "No pudimos guardar. Revisa tu conexión." };
   await db().from("events").insert({ participant_id: p.id, module: "pacto", type: "step_done", step });
+  revalidatePath("/mi-perfil/emprendedor");
   return { ok: true };
 }
 
@@ -68,5 +71,6 @@ export async function completePact(data: Partial<PactData>, wouldUse: boolean) {
     .eq("id", row.id);
   if (error) return { error: "No pudimos guardar." };
   if (!row.completed) await db().from("events").insert({ participant_id: p.id, module: "pacto", type: "complete" });
+  revalidatePath("/mi-perfil/emprendedor");
   return { ok: true };
 }

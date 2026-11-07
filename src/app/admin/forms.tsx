@@ -9,7 +9,10 @@ export function LoginForm() {
   const [state, action, pending] = useActionState(adminLogin, null);
   return (
     <form action={action} className="mx-auto max-w-sm space-y-4">
-      <Field label="Contraseña del dashboard">
+      <Field label="Correo del equipo">
+        <input name="email" type="email" required autoComplete="username" className={inputClass} />
+      </Field>
+      <Field label="Clave del equipo">
         <input name="password" type="password" required autoComplete="current-password" className={inputClass} />
       </Field>
       <Button type="submit" disabled={pending} className="w-full">
